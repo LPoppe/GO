@@ -1,4 +1,4 @@
-package main.Client.View.NedapGUI;
+package Client.View.NedapGUI;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;

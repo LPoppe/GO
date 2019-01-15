@@ -1,4 +1,7 @@
-package main.Client;
+package Client;
 
+/**
+ *
+ */
 public class Controller {
 }
