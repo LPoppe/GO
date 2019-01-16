@@ -52,7 +52,8 @@ public class GoServer {
                 newClient1.start();
 
                 gameID = createGameID();
-                GameHandler newGame = new GameHandler(newClient1, gameID);
+                GameHandler newGame = new GameHandler(this, newClient1, gameID);
+                addGame(newGame, gameID);
                 newGame.start();
 
                 sockP2 = serverSock.accept();
@@ -97,5 +98,13 @@ public class GoServer {
      */
     synchronized void removeHandler(ClientHandler handler) {
         this.handlerThreads.remove(handler);
+    }
+
+    private synchronized void addGame(GameHandler handler, int gameID) {
+        this.gameThreads.put(handler, gameID);
+    }
+
+    synchronized void removeGame(GameHandler handler) {
+        this.gameThreads.remove(handler);
     }
 }

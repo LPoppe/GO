@@ -77,8 +77,8 @@ public class GoGuiIntegrator implements GoGui {
 	}
 
 	@Override
-	public synchronized void removeHintIdicator() {
-		Platform.runLater(() -> wrappee.removeHintIdicator());
+	public synchronized void removeHintIndicator() {
+		Platform.runLater(() -> wrappee.removeHintIndicator());
 	}
 
 	@Override

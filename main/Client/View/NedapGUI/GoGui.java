@@ -50,7 +50,7 @@ public interface GoGui {
     /**
      * Hides the hint indicator.
      */
-    void removeHintIdicator();
+    void removeHintIndicator();
 
     /**
      * Clears the board of all stones.

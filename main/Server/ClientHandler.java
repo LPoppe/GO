@@ -48,8 +48,14 @@ public class ClientHandler extends Thread {
         }
     }
 
-    public void clientLeft() {
-        server.removeHandler(this);
+    /**
+     * ???
+     */
+    private void clientLeft() {
         //Send message that client has left.
+    }
+
+    private void otherClientLeft() {
+
     }
 }

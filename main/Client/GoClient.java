@@ -14,10 +14,10 @@ public class GoClient extends Thread {
     private BufferedWriter out;
 
     //Parameters for playing the game
-    private int BoardColor;
+    private int boardColor;
+    private int gameID;
 
-    /**
-     * Constructs a client object and attempts to create socket connection.
+    /**Constructs a client object and attempts to create socket connection.
      * @param name  name of the player
      * @param host
      * @param port  the server port
@@ -28,10 +28,10 @@ public class GoClient extends Thread {
             this.sock = new Socket(host, port);
             this.in = new BufferedReader(new InputStreamReader(this.sock.getInputStream()));
             this.out = new BufferedWriter(new OutputStreamWriter(this.sock.getOutputStream()));
-        }  catch (UnknownHostException ex) {
-            System.out.println("Server not found: " + ex.getMessage());
-        } catch (IOException e) {
-            System.out.println("I/O error: " + e.getMessage());
+        }  catch (UnknownHostException uhe) {
+            System.out.println("Server not found: " + uhe.getMessage());
+        } catch (IOException ioe) {
+            System.out.println("I/O error: " + ioe.getMessage());
         }
     }
 
@@ -39,29 +39,30 @@ public class GoClient extends Thread {
 
     }
 
-    public void sendHandshake() {
-
+    public String sendHandshake() {
+        return "HANDSHAKE+" + this.clientName + "\n";
     }
 
-    public void setConfig() {
-
+    public String sendConfig(String preferredColor, Integer preferredBoardSize) {
+        return "SET_CONFIG+" + this.gameID + "+" + preferredColor + "+" + preferredBoardSize + "\n";
     }
 
-    public void sendMove() {
-
+    public String sendMove(int tileIndex) {
+        return "MOVE+" + this.gameID + "+" + this.clientName + "+" + tileIndex + "\n";
     }
 
-    public void sendPass() {
-
+    public String sendPass() {
+        return "PASS+" + this.gameID + "+" + this.clientName + "\n";
     }
 
-    public void sendExit() {
+    public String sendExit() {
         try {
             this.in.close();
             this.out.close();
             this.sock.close();
-        } catch (IOException e) {
-            System.out.println("Encountered problem while exiting: " + e.getMessage());
+        } catch (IOException ioe) {
+            System.out.println("Encountered problem while exiting: " + ioe.getMessage());
         }
+        return "EXIT+" + this.gameID + "+" + this.clientName + "\n";
     }
 }

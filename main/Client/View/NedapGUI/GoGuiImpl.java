@@ -195,12 +195,12 @@ public class GoGuiImpl extends Application {
 					}
 				}
 			}
-		} catch (InvalidCoordinateException e) {
+		} catch (Client.View.NedapGUI.InvalidCoordinateException e) {
 			throw new IllegalStateException(e);
 		}
 	}
 
-	protected void addStone(int x, int y, boolean white) throws InvalidCoordinateException {
+	protected void addStone(int x, int y, boolean white) throws Client.View.NedapGUI.InvalidCoordinateException {
 		checkCoordinates(x, y);
 		removeStone(x, y);
 
@@ -269,7 +269,7 @@ public class GoGuiImpl extends Application {
 		hint.setVisible(true);
 	}
 
-	protected void removeHintIdicator() {
+	protected void removeHintIndicator() {
 		hint.setVisible(false);
 	}
 
