@@ -1,4 +1,4 @@
-package Client.View.NedapGUI;
+package main.Client.View.NedapGUI;
 
 public class InvalidCoordinateException extends Exception {
 
