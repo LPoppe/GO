@@ -1,13 +1,25 @@
 package main.Logic;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+
 import main.Logic.GoGame;
 public class Board {
 
     private Integer boardSize;
     private String boardState;
     private Integer[] currentBoard;
+    private List<String> boardHistory = new ArrayList<>();
+
+    public void addToHistory(String boardState) {
+        boardHistory.add(boardState);
+    }
+
+    public List<String> getBoardHistory() {
+        return boardHistory;
+    }
 
     public enum Tiles {
         empty(0), black(1), white(2);

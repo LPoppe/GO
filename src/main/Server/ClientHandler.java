@@ -10,7 +10,6 @@ public class ClientHandler extends Thread {
     private String clientName;
     private Socket clientSocket;
     private Boolean isFirstPlayer;
-    private Boolean isCurrentPlayer;
     private GoServer server;
     private GameHandler gameHandler;
     private BufferedReader in;
@@ -45,8 +44,8 @@ public class ClientHandler extends Thread {
                 processMessage(input);
             }
         } catch (IOException e) {
-            System.out.println("Socket connection lost: " + e.getMessage());
-            this.clientLeft();
+            server.printOnServer("Socket connection lost: " + e.getMessage());
+            shuttingDown();
         }
     }
 
@@ -57,53 +56,23 @@ public class ClientHandler extends Thread {
     private void processMessage(String input) {
         server.printOnServer("From client: " + input);
         String[] splitMessage = input.split("\\+");
-        server.printOnServer(Arrays.toString(splitMessage));
         String cmd = splitMessage[0];
 
         switch (cmd) {
             //Identification to the server. Set name to the player name provided.
             //Acknowledges the player and sends back game ID and whether player is first to connect.
             case "HANDSHAKE":
-                this.clientName = splitMessage[1];
-                sendLine("ACKNOWLEDGE_HANDSHAKE+" + gameHandler.getGameID() + "+"
-                        + booleanToInt(this.isFirstPlayer));
+                processHandshake(splitMessage);
                 break;
             //Set the game configuration according to the preferred color and board size provided.
             case "SET_CONFIG":
-                // TODO: Check array length, send error message if unexpected length
-
-                // We ignore gameId, as current structure doesn't depend on it
-                //String gameId = splitMessage[1];
-
-
-                int preferredColorInt = Integer.parseInt(splitMessage[2]);
-                int boardSize = Integer.parseInt(splitMessage[3]);
-
-                // Parse color
-                GoGame.PlayerColor preferredColor;
-                if (preferredColorInt == 0) {
-                    if (Math.random() < 0.5) {
-                        preferredColor = GoGame.PlayerColor.black;
-                    } else {
-                        preferredColor = GoGame.PlayerColor.white;
-                    }
-                } else if (preferredColorInt == 1) {
-                    preferredColor = GoGame.PlayerColor.black;
-                } else if (preferredColorInt == 2) {
-                    preferredColor = GoGame.PlayerColor.white;
-                } else {
-                    unknownCommand("Preferred color should be 0, 1, or 2.");
-                    server.printOnServer("Preferred color reached unexpected color: " + preferredColorInt);
-                    break;
-                }
-
-                if (isFirstPlayer) {
-                    gameHandler.setConfig(this, preferredColor, boardSize);
-                } else {
-                    unknownCommand("Setting configuration failed: you are player two.");
-                    server.printOnServer("Second player attempted to setConfig.");
-                    break;
-                }
+                processConfig(splitMessage);
+                break;
+            case "MOVE":
+                processMove(splitMessage);
+                break;
+            case "EXIT":
+                processExit(splitMessage);
                 break;
             default:
                 unknownCommand("Command not recognised.");
@@ -126,29 +95,121 @@ public class ClientHandler extends Thread {
      * @param message the message sent.
      */
     void sendLine(String message) {
+        //TODO: remove check when done.
         if (message.contains("\n")) {
             throw new RuntimeException("Blegh: " + message);
         }
 
         try {
             server.printOnServer("Game " + gameHandler.getGameID()
-                    + ", Player " + this.getName() + ": " + message);
+                    + ", Player " + this.clientName + ": " + message);
             out.write(message + "\n");
             out.flush();
         } catch (IOException e) {
-            System.out.println("Failed to write message. Shutting down: " + e.getMessage());
-            clientLeft();
+            server.printOnServer("Failed to write message. Shutting down: " + e.getMessage());
+            shuttingDown();
+        }
+    }
+
+    /**Sets the client name based on the name sent.
+     * @param splitMessage should contain HANDSHAKE, PLAYER_NAME.
+     */
+    private void processHandshake(String[] splitMessage) {
+        if (splitMessage.length != 2) {
+            unknownCommand("Handshake did not contain name.");
+            server.printOnServer("Handshake was incorrect length.");
+        } else {
+            this.clientName = splitMessage[1];
+            sendLine("ACKNOWLEDGE_HANDSHAKE+" + gameHandler.getGameID() + "+" + booleanToInt(this.isFirstPlayer));
+        }
+    }
+
+    /**Sets game configuration using the settings provided by the client.
+     * Client needs to have been the first player to connect to the server.
+     * @param splitMessage should contain SET_CONFIG, GAME_ID ,PREFERRED_COLOR, BOARD_SIZE.
+     */
+    private void processConfig(String[] splitMessage) {
+        if (splitMessage.length != 4) {
+            server.printOnServer(clientName + ": Set_config message was missing arguments.");
+            unknownCommand("Message missing GameID, preferredColor, or boardSize.");
+        } else {
+            if (isFirstPlayer) {
+                //Ignores gameId (splitMessage[1], as current structure doesn't depend on it
+                int preferredColorInt = Integer.parseInt(splitMessage[2]);
+                int boardSize = Integer.parseInt(splitMessage[3]);
+
+                // Parse color.
+                GoGame.PlayerColor preferredColor;
+
+                if (preferredColorInt == 0) {
+                    if (Math.random() < 0.5) {
+                        preferredColor = GoGame.PlayerColor.black;
+                    } else {
+                        preferredColor = GoGame.PlayerColor.white;
+                    }
+                } else if (preferredColorInt == 1) {
+                    preferredColor = GoGame.PlayerColor.black;
+                } else if (preferredColorInt == 2) {
+                    preferredColor = GoGame.PlayerColor.white;
+                } else {
+                    server.printOnServer(clientName + ": Preferred color reached unexpected color: " + preferredColorInt);
+                    unknownCommand("Preferred color should be 0, 1, or 2.");
+                    return;
+                }
+
+                gameHandler.setConfig(this, preferredColor, boardSize);
+            } else {
+                server.printOnServer(clientName + ": Second player attempted to setConfig.");
+                unknownCommand("Setting configuration failed: you are player two.");
+            }
+        }
+    }
+
+    /**Checks if it is the messaging player's turn and calls the GameHandler's processMove() method
+     * to further handle the input.
+     * @param splitMessage should contain MOVE, GAME_ID, PLAYER_NAME, TILE_INDEX
+     */
+    private void processMove(String[] splitMessage) {
+        if (splitMessage.length != 4) {
+            server.printOnServer(clientName +  ": Move message was missing arguments.");
+            unknownCommand("Message missing gameID, username, or tileIndex.");
+        } else {
+            if (gameHandler.getCurrentPlayer() == this) {
+                int move = Integer.parseInt(splitMessage[3]);
+                gameHandler.processMove(this, move);
+            } else {
+                sendLine("INVALID_MOVE+" + "Attempt at sending move out of turn.");
+                server.printOnServer(clientName + ": Attempt at sending move out of turn.");
+            }
+        }
+    }
+
+    /**Creates clean disconnect between clients and server after receiving exit message.
+     * Shuts down anyway when the client does not provide the correct string,
+     * because an EXIT command was sent, and the client may have already disconnected itself.
+     * @param splitMessage should contain EXIT, GAME_ID, PLAYER_NAME
+     */
+    private void processExit(String[] splitMessage) {
+        if (splitMessage.length != 3) {
+           server.printOnServer(clientName + ": EXIT command was not properly sent. Closing down game.");
+            shuttingDown();
+        } else {
+            server.printOnServer(clientName + ": EXIT command sent. Closing down game.");
+            shuttingDown();
+        }
+    }
+
+    private void shuttingDown() {
+        gameHandler.clientLeft(this);
+        try {
+            this.in.close();
+            this.out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     private void unknownCommand(String errorMessage) {
         sendLine("UNKNOWN_COMMAND+" + errorMessage);
-    }
-
-    /**
-     * ???
-     */
-    private void clientLeft() {
-        //Send message that client has left.
     }
 }

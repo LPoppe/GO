@@ -18,6 +18,9 @@ public class GoGame {
         PlayerColor(int i) {
             this.playerColorNumber = i;
         }
+        public int getPlayerColorNumber() {
+            return playerColorNumber;
+        }
     }
 
     private PlayerColor currentPlayerColor;
@@ -27,7 +30,7 @@ public class GoGame {
     public enum GameState { WAITING, PLAYING, FINISHED }
     public GameState currentGameState;
 
-    private List<String> boardHistory = new ArrayList<>();
+
     public Integer turnTimer;
 
     public GoGame(ClientHandler player1, PlayerColor color, Integer boardSize) {
@@ -36,7 +39,7 @@ public class GoGame {
         this.currentPlayerColor = PlayerColor.black;
 
         this.currentGameState = GameState.WAITING;
-        this.boardHistory.add(goBoard.getBoardState());
+        this.goBoard.addToHistory(goBoard.getBoardState());
         this.turnTimer = 0;
     }
 
@@ -61,6 +64,10 @@ public class GoGame {
         return currentPlayerColor.playerColorNumber;
     }
 
+    public ClientHandler getCurrentClient() {
+        return getClientByColor(currentPlayerColor);
+    }
+
     public String getBoardState() {
         return goBoard.getBoardState();
     }
@@ -69,6 +76,9 @@ public class GoGame {
         return goBoard.getBoardSize();
     }
 
+    public Board getBoard() {
+        return this.goBoard;
+    }
     //Requires player to exist in the map.
     //Can only be called after setPlayerOneColor() and setPlayerTwoColor().
     public PlayerColor getColorByClient(ClientHandler player) {
@@ -80,7 +90,7 @@ public class GoGame {
     }
 
     public List<String> getBoardHistory() {
-        return boardHistory;
+        return goBoard.getBoardHistory();
     }
 
     public void changePlayer() {
@@ -100,7 +110,7 @@ public class GoGame {
     public void changeBoardState(ClientHandler messagingPlayer, int playerMove) {
         if (getColorByClient(messagingPlayer) != currentPlayerColor) {
             goBoard.setBoardState(getColorByClient(messagingPlayer).playerColorNumber, playerMove);
-            boardHistory.add(goBoard.getBoardState());
+            goBoard.addToHistory(goBoard.getBoardState());
         } else {
             System.out.println("Wrong player. This should not be reached.");
         }
@@ -112,17 +122,22 @@ public class GoGame {
      * @param playerColor the color of the player being scored.
      * @return the player's score
      */
-    public double calculateScore(Board board, int playerColor) {
+    public double calculateScore(Board board, PlayerColor playerColor) {
         return 0.0;
+    }
+
+    public String getPlayerScores() {
+        double scoreBlack = calculateScore(this.goBoard, PlayerColor.black);
+        double scoreWhite = calculateScore(this.goBoard, PlayerColor.white);
+        return scoreBlack + ";" + scoreWhite;
     }
 
     /**
      * Called when both players have passed after one another.
      */
     public void determineWinner(Board board) {
-        double scoreBlack = calculateScore(board, PlayerColor.black.playerColorNumber);
-        double scoreWhite = calculateScore(board, PlayerColor.white.playerColorNumber);
-
+        double scoreBlack = calculateScore(board, PlayerColor.black);
+        double scoreWhite = calculateScore(board, PlayerColor.white);
         }
         //
 }

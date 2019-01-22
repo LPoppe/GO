@@ -1,14 +1,14 @@
 package main.Client;
 
 import main.Client.View.TUI.GoTUI;
-import main.Logic.GoGame;
 
 /**
  *
  */
 public class GoController {
-    private GoGame game;
     private Integer gameID;
+    private String thisPlayerName;
+    private String opponentPlayerName;
     private GoClient gameClient;
     private GoTUI gameView;
 

@@ -1,7 +1,10 @@
 package main.Client.Player;
 
+import main.Logic.Board;
+
 public interface Player {
 
+    String determineMove(Board board);
     //updateGroups
         //opponent groups
         //own groups

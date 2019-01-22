@@ -42,7 +42,7 @@ public class GoServer {
         //TODO: If client1 disconnects before client2 enters, the next client will be client 2.
             try {
                 sockP1 = serverSock.accept();
-                System.out.println("Client 1 is connected : " + sockP1);
+                printOnServer("Client 1 is connected : " + sockP1);
 
                 gameID = createGameID();
                 GameHandler newGame = new GameHandler(this, gameID);
@@ -54,7 +54,7 @@ public class GoServer {
                 newClient1.start();
 
                 sockP2 = serverSock.accept();
-                System.out.println("Client 2 is connected : " + sockP2);
+                printOnServer("Client 2 is connected : " + sockP2);
                 ClientHandler newClient2 = new ClientHandler(this, newGame, sockP2, false);
                 this.addHandler(newClient2);
                 newGame.addPlayer2(newClient2);
@@ -62,7 +62,7 @@ public class GoServer {
 
 
             } catch (IOException ie) {
-                System.out.println("A game connection has been lost. " + ie.getMessage());
+                printOnServer("A game connection has been lost. " + ie.getMessage());
             }
         }
     }
@@ -71,7 +71,7 @@ public class GoServer {
      * Port number cannot be a system port.
      */
     private void setPort() {
-        System.out.println("Please provide a port number above 1023: ");
+        printOnServer("Please provide a port number above 1023: ");
         Scanner readPort = new Scanner(System.in);
         int input = 0;
         do {
@@ -90,14 +90,14 @@ public class GoServer {
     private boolean isPortFree(int input) {
         boolean result;
         if (input < 1024) {
-            System.out.println("System port chosen. Please provide a number above 1023: ");
+            printOnServer("System port chosen. Please provide a number above 1023: ");
             result = false;
         } else {
             try {
                 this.serverSock = new ServerSocket(input);
                 result = true;
             } catch (IOException e) {
-                System.out.println("Port already in use. Please provide a different number: ");
+                printOnServer("Port already in use. Please provide a different number: ");
                 result = false;
             }
         }

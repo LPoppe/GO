@@ -1,18 +1,26 @@
 package main.Client;
+import main.Logic.GoGame;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 public class GoClient extends Thread {
 
     //Communication
-    private String clientName;
     private Socket sock;
-    private Integer gameID;
     private BufferedReader in;
     private BufferedWriter out;
 
+    //Game characteristics
+    private Integer gameID;
+    private String clientName;
+    private GoGame.PlayerColor clientColor;
+    private boolean isClientsTurn;
+    private Integer boardSize;
+    private String opponentName;
 
     /**Constructs a client object and attempts to create socket connection.
      * @param host
@@ -56,11 +64,10 @@ public class GoClient extends Thread {
         client.start();
     }
 
-    /**
-     * Reads input from the server.
+    /**Reads input from the server.
      */
     public void run() {
-        writeToStream(sendHandshake(readString("Please enter your name: ")));
+        sendHandshake(readString("Please enter your name: "));
 
         String serverMessage;
         try {
@@ -69,59 +76,165 @@ public class GoClient extends Thread {
                 processServerMessage(serverMessage);
             }
         } catch (IOException ioe) {
-            System.out.println("Receiving message failed: " + ioe.getMessage());
+            printToGame("Connection to server lost: " + ioe.getMessage());
+            closeClient();
+
         }
     }
 
     private void writeToStream(String message) {
         try {
-            out.write(message);
+            out.write(message + "\n");
             out.flush();
         } catch (IOException ioe) {
-            System.out.println("Sending message failed: '" + message + "': " + ioe.getMessage());
+            printToGame("Sending message failed: '" + message + "': " + ioe.getMessage());
         }
     }
-
+    //TODO maybe check if the right game is sending messages.
     private void processServerMessage(String input) {
         String[] splitMessage = input.split("\\+");
         String cmd = splitMessage[0];
         switch (cmd) {
+            case "ACKNOWLEDGE_HANDSHAKE":
+                processHandshakeAcknowledgement(splitMessage);
+                break;
             case "REQUEST_CONFIG":
-                String preferredColor = readString("Provide color - 0 for random, 1 for black, 2 for white: ");
-                String preferredBoardSize = readString("Provide board size: ");
-                writeToStream(sendConfig(preferredColor, preferredBoardSize));
+                processConfigRequest(splitMessage);
+                break;
+            case "ACKNOWLEDGE_CONFIG":
+                processConfigAcknowledgement(splitMessage);
+                break;
+            case "ACKNOWLEDGE_MOVE":
+                processMoveAcknowledgement(splitMessage);
+                break;
+            case "INVALID_MOVE":
+                processInvalidMoveSent(splitMessage);
+                break;
+            case "UNKNOWN_COMMAND":
+                processUnknownCommandWarning(splitMessage);
+                break;
+            case "UPDATE_STATUS":
+                processStatusUpdate(splitMessage);
+                break;
+            case "GAME_FINISHED":
+                processGameEnd(splitMessage);
                 break;
             default:
-                System.out.println("Command not recognised.");
+                printToGame("Command not recognised.");
         }
     }
 
-    private String sendHandshake(String input) {
+    private void processHandshakeAcknowledgement(String[] splitMessage) {
+        //* The boolean is_leader (splitMessage[2]) is ignored in the current configuration.*/
+        try {
+            this.gameID = Integer.valueOf(splitMessage[1]);
+        } catch (NullPointerException ne) {
+            printToGame("Handshake acknowledgement missing gameID.");
+        }
+    }
+    private void processConfigRequest(String[] splitMessage) {
+        try {
+            String preferredColor = readString("Provide color - 0 for random, 1 for black, 2 for white: ");
+            String preferredBoardSize = readString("Provide board size: ");
+            sendConfig(preferredColor, preferredBoardSize);
+        } catch (NullPointerException ne) {
+            printToGame("Config request did not match expected length.");
+        }
+    }
+
+    private void processConfigAcknowledgement(String[] splitMessage) {
+        printToGame(Arrays.toString(splitMessage));
+        try {
+            this.clientName = splitMessage[1];
+            int colorNumber = Integer.parseInt(splitMessage[2]);
+
+            if (colorNumber == 1) {
+                this.clientColor = GoGame.PlayerColor.black;
+            } else if (colorNumber == 2) {
+                this.clientColor = GoGame.PlayerColor.white;
+            } else {
+                printToGame("Impossible tile color assigned to player.");
+            }
+
+            this.boardSize = Integer.valueOf(splitMessage[2]);
+            this.opponentName = splitMessage[4];
+        } catch (NullPointerException ne) {
+            printToGame("Config acknowledgement did not match expected length.");
+        }
+    }
+
+    /**Processes a message containing a new move made on the board by this client or the opponent.
+     * @param splitMessage contains ACKNOWLEDGE_MOVE, GAME_ID, MOVE, GAME_STATE
+     */
+    private void processMoveAcknowledgement(String[] splitMessage) {
+        if (splitMessage.length != 4) {
+            printToGame("Move acknowledgement did not match expected length.");
+        } else {
+            //gameState should look like: STATUS;CURRENT_PLAYER;BOARD
+            String gameState = splitMessage[3];
+            String[] splitGameState = gameState.split(";");
+
+            //Checks message length and update the current turn status.
+            if (splitGameState.length != 4) {
+                printToGame("GameState message did not match expected length.");
+            } else {
+                Integer move = Integer.valueOf(splitMessage[2]);
+                isClientsTurn = Integer.valueOf(splitGameState[3]) == clientColor.getPlayerColorNumber();
+            }
+        }
+    }
+
+    private void processInvalidMoveSent(String[] splitMessage) {
+
+    }
+    private void processUnknownCommandWarning(String[] splitMessage) {
+
+    }
+
+    private void processStatusUpdate(String[] splitMessage) {
+
+    }
+    private void processGameEnd(String[] splitMessage) {
+
+    }
+
+    private void sendHandshake(String input) {
         this.clientName = input;
-        return "HANDSHAKE+" + this.clientName + "\n";
+        writeToStream("HANDSHAKE+" + this.clientName);
     }
 
-    private String sendConfig(String preferredColor, String preferredBoardSize) {
-        return "SET_CONFIG+" + this.gameID + "+" + preferredColor + "+" + preferredBoardSize + "\n";
+    private void sendConfig(String preferredColor, String preferredBoardSize) {
+        writeToStream("SET_CONFIG+" + this.gameID + "+" + preferredColor + "+" + preferredBoardSize);
     }
 
-    private String sendMove(int tileIndex) {
-        return "MOVE+" + this.gameID + "+" + this.clientName + "+" + tileIndex + "\n";
+    private void sendMove(int tileIndex) {
+        writeToStream("MOVE+" + this.gameID + "+" + this.clientName + "+" + tileIndex);
     }
 
-    private String sendPass() {
-        return "PASS+" + this.gameID + "+" + this.clientName + "\n";
+    private void sendPass() {
+        writeToStream("PASS+" + this.gameID + "+" + this.clientName);
     }
 
-    private String sendExit() {
+    private void sendExit() {
+        writeToStream("EXIT+" + this.gameID + "+" + this.clientName);
+        closeClient();
+    }
+
+    /**Called when client decides to leave the game, or close after finishing a game.
+     * Closes the input and output stream and the socket.
+     */
+    private void closeClient() {
         try {
             this.in.close();
             this.out.close();
             this.sock.close();
         } catch (IOException ioe) {
-            System.out.println("Encountered problem while exiting: " + ioe.getMessage());
+            printToGame("Encountered problem while exiting: " + ioe.getMessage());
         }
-        return "EXIT+" + this.gameID + "+" + this.clientName + "\n";
+    }
+
+    private void printToGame(String input) {
+        System.out.println(input);
     }
 
     private static String readString(String input) {
