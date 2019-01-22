@@ -16,10 +16,10 @@ public class ServerTest {
         server = new GoServer();
         try {
             InetAddress host = InetAddress.getLocalHost();
-            client1 = new GoClient("Victor", host, 7171);
-            client2 = new GoClient("Anna", host, 7171);
-            client3 = new GoClient("Nelli", host, 7171);
-            client4 = new GoClient("Jasper", host, 7171);
+            client1 = new GoClient(host, 7171);
+            client2 = new GoClient(host, 7171);
+            client3 = new GoClient(host, 7171);
+            client4 = new GoClient(host, 7171);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
