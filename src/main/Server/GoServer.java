@@ -1,12 +1,12 @@
 package main.Server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 
 public class GoServer {
-    private int port;
 
     /**The list handlerThreads saves all connected clients.
      * The GameThreads map stores all running games.**/
@@ -38,7 +38,7 @@ public class GoServer {
         while (true) {
             Socket sockP1;
             Socket sockP2;
-            Integer gameID;
+            int gameID;
         //TODO: If client1 disconnects before client2 enters, the next client will be client 2.
             // TODO: Shutting down both clients makes the server loose its shit.
             // TODO: probably fixed if I add a waiting list for clients and call 'try start game' method
@@ -81,23 +81,22 @@ public class GoServer {
             if (readPort.hasNextInt()) {
                 input = readPort.nextInt();
             }
-        } while (!isPortFree(input));
-        this.port = input;
+        } while (!startServerSocket(input));
         System.out.println("Port number accepted.");
     }
 
     /**Checks the availability of a given port number.
-     * @param input Port number as specified by the user.
+     * @param portNr Port number as specified by the user.
      * @return true if port is free, otherwise false.
      */
-    private boolean isPortFree(int input) {
+    private boolean startServerSocket(int portNr) {
         boolean result;
-        if (input < 1024) {
+        if (portNr < 1024) {
             printOnServer("System port chosen. Please provide a number above 1023: ");
             result = false;
         } else {
             try {
-                this.serverSock = new ServerSocket(input);
+                this.serverSock = new ServerSocket(portNr, 50, InetAddress.getByName("0.0.0.0"));
                 result = true;
             } catch (IOException e) {
                 printOnServer("Port already in use. Please provide a different number: ");
@@ -109,9 +108,9 @@ public class GoServer {
 
     /** Generates a unique ID number for a Go game between 100 and 999.
      */
-    private synchronized Integer createGameID() {
+    private synchronized int createGameID() {
         Random r = new Random();
-        Integer gameID;
+        int gameID;
         do {
             gameID = 100 + r.nextInt(900);
         } while (gameThreads.containsValue(gameID));

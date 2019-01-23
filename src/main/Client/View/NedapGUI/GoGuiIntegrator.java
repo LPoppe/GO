@@ -1,6 +1,7 @@
 package main.Client.View.NedapGUI;
 
 import javafx.application.Platform;
+import javafx.stage.Stage;
 
 public class GoGuiIntegrator implements GoGui {
 
@@ -117,5 +118,13 @@ public class GoGuiIntegrator implements GoGui {
 	private void startJavaFX() {
 		createWrappedObject();
 		wrappee.countDownConfigurationLatch();
+	}
+
+	public Stage getPrimaryStage() {
+		return this.wrappee.getPrimaryStage();
+	}
+
+	public double getInitialSquareSize() {
+		return this.wrappee.getInitialSquareSize();
 	}
 }

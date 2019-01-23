@@ -1,5 +1,7 @@
 package main.Logic;
 
+import javafx.util.Pair;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,17 +50,10 @@ public class Board {
         return this.boardSize;
     }
 
-    /**Updates the board with a move.
-     * @param playerColorNumber the tile color to be added. Requires the playerColor to be 1 or 2.
-     * @param playerMove the location of the new tile.
-     */
-    public void setBoardState(int playerColorNumber, int playerMove) {
-        if (playerColorNumber == Tiles.black.tileNumber || playerColorNumber == Tiles.white.tileNumber) {
-            currentBoard[playerMove] = playerColorNumber;
-            updateBoard();
-        } else {
-            System.out.println("Unknown player sent move.");
-        }
+    public Pair<Integer, Integer> getTileCoordinates(int tileIndex) {
+        Integer x = tileIndex % boardSize;
+        Integer y = tileIndex / boardSize;
+        return new Pair<>(x, y);
     }
 
     /**Returns the tile content at a certain location on the board.
@@ -76,16 +71,30 @@ public class Board {
         Arrays.fill(currentBoard, Tiles.empty.tileNumber);
     }
 
-    /**Updates the board view.
+    /**Updates the board with a move.
+     * @param playerColorNumber the tile color to be added. Requires the playerColor to be 1 or 2.
+     * @param playerMove the location of the new tile.
      */
-    private void updateBoard() {
-        //warning to listener or whatever
+    public void setBoardState(int playerColorNumber, int playerMove) {
+        if (playerColorNumber == Tiles.black.tileNumber || playerColorNumber == Tiles.white.tileNumber) {
+            updateBoard(playerColorNumber, playerMove);
+        } else {
+            System.out.println("Unknown player sent move.");
+        }
     }
 
-    private void calculateTileChanges() {
+    private void updateBoard(int tileColor, int tileIndex) {
+        if (tileColor == Tiles.black.tileNumber) {
 
+        } else {
+
+        }
     }
 
+    /**
+     * Draw a string representation of the current board state, which may be used in the TUI.
+     * @return a string picturing the current board.
+     */
     public String drawBoard() {
         int x = 0;
         int y = 0;

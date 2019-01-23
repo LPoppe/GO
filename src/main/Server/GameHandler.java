@@ -19,7 +19,7 @@ public class GameHandler {
     private GameHandlerState currentState;
     private ValidityChecker checker;
 
-    GameHandler(GoServer server, Integer gameID) {
+    GameHandler(GoServer server, int gameID) {
         this.checker = new ValidityChecker();
         this.server = server;
         this.gameID = gameID;
@@ -29,6 +29,7 @@ public class GameHandler {
     /**Requires currentState != PLAYING.
      * Sends the acknowledgement of the configuration to the players.
      */
+    //TODO GAME STARTS AS SOON AS PLAYER 2 IS CONNECTED, INSTEAD OF AFTER PLAYER 2 HANDSHAKE
     private synchronized void setNextState() {
         if (player1 != null && player2 != null && goGame != null) {
             goGame.setPlayerTwo(player2);

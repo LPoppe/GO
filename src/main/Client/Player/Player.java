@@ -1,10 +1,14 @@
 package main.Client.Player;
 
-import main.Logic.Board;
+import main.Client.GoController;
 
 public interface Player {
 
-    Integer determineMove(Board board);
+    void determineMove();
+
+    void userTileClicked();
+
+    void notifyTurn();
     //updateGroups
         //opponent groups
         //own groups

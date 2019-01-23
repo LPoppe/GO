@@ -308,6 +308,10 @@ public class GoGuiImpl extends Application {
 		return currentBoardSize;
 	}
 
+	public int getInitialSquareSize() {
+		return INITIAL_SQUARE_SIZE;
+	}
+
 	protected void setInitialBoardSize(int size) {
 		currentBoardSize = size;
 	}
@@ -334,4 +338,7 @@ public class GoGuiImpl extends Application {
 		}
 	}
 
+	public Stage getPrimaryStage() {
+		return this.primaryStage;
+	}
 }

@@ -176,7 +176,7 @@ public class GoClient extends Thread {
                 String move = splitMessage[2];
                 int currentPlayerColor = Integer.valueOf(splitGameState[1]);
                 String newBoard = splitGameState[2];
-                controller.updateAfterTurn(currentPlayerColor, move, newBoard);
+                controller.updateTurnFromServer(currentPlayerColor, move, newBoard);
             }
         }
     }
