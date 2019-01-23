@@ -40,6 +40,9 @@ public class GoServer {
             Socket sockP2;
             Integer gameID;
         //TODO: If client1 disconnects before client2 enters, the next client will be client 2.
+            // TODO: Shutting down both clients makes the server loose its shit.
+            // TODO: probably fixed if I add a waiting list for clients and call 'try start game' method
+            // TODO: each time a new client arrives.
             try {
                 sockP1 = serverSock.accept();
                 printOnServer("Client 1 is connected : " + sockP1);

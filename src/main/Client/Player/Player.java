@@ -4,7 +4,7 @@ import main.Logic.Board;
 
 public interface Player {
 
-    String determineMove(Board board);
+    Integer determineMove(Board board);
     //updateGroups
         //opponent groups
         //own groups

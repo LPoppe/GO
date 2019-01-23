@@ -34,7 +34,7 @@ public class GoGame {
     public Integer turnTimer;
 
     public GoGame(ClientHandler player1, PlayerColor color, Integer boardSize) {
-        this.goBoard = new Board(this, boardSize);
+        this.goBoard = new Board(boardSize);
         setPlayerOneColor(player1, color);
         this.currentPlayerColor = PlayerColor.black;
 

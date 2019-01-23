@@ -49,6 +49,9 @@ public class ClientHandler extends Thread {
         }
     }
 
+    public String getClientName() {
+        return this.clientName;
+    }
     /**
      * Determines the correct response to a message sent by a client.
      * @param input
@@ -191,7 +194,7 @@ public class ClientHandler extends Thread {
      */
     private void processExit(String[] splitMessage) {
         if (splitMessage.length != 3) {
-           server.printOnServer(clientName + ": EXIT command was not properly sent. Closing down game.");
+            server.printOnServer(clientName + ": EXIT command was not properly sent. Closing down game.");
             shuttingDown();
         } else {
             server.printOnServer(clientName + ": EXIT command sent. Closing down game.");
@@ -212,4 +215,5 @@ public class ClientHandler extends Thread {
     private void unknownCommand(String errorMessage) {
         sendLine("UNKNOWN_COMMAND+" + errorMessage);
     }
+
 }

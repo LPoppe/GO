@@ -3,6 +3,9 @@ package main.Server;
 import main.Logic.GoGame;
 import main.Logic.ValidityChecker;
 
+import java.io.IOException;
+import java.net.SocketException;
+
 /**Combines two opponent GoClients of a Go game played on the GoServer.
  */
 public class GameHandler {
@@ -11,7 +14,7 @@ public class GameHandler {
     private GoGame goGame;
     private GoServer server;
     private final Integer gameID;
-
+    private boolean disconnectAttempted = false;
     public enum GameHandlerState { INIT, PLAYING }
     private GameHandlerState currentState;
     private ValidityChecker checker;
@@ -30,12 +33,12 @@ public class GameHandler {
         if (player1 != null && player2 != null && goGame != null) {
             goGame.setPlayerTwo(player2);
             currentState = GameHandlerState.PLAYING;
-            player1.sendLine("ACKNOWLEDGE_CONFIG+" + player1.getName()
+            player1.sendLine("ACKNOWLEDGE_CONFIG+" + player1.getClientName()
                     + "+" + goGame.getColorByClient(player1).getPlayerColorNumber() + "+" + goGame.getBoardSize()
-                    + "+" + goGame.getBoardState() + "+" + player2.getName());
-            player2.sendLine("ACKNOWLEDGE_CONFIG+" + player2.getName()
+                    + "+" + goGame.getBoardState() + "+" + player2.getClientName());
+            player2.sendLine("ACKNOWLEDGE_CONFIG+" + player2.getClientName()
                     + "+" + goGame.getColorByClient(player2).getPlayerColorNumber() + "+" + goGame.getBoardSize()
-                    + "+" + goGame.getBoardState() + "+" + player1.getName());
+                    + "+" + goGame.getBoardState() + "+" + player1.getClientName());
         } else {
             currentState = GameHandlerState.INIT;
         }
@@ -104,21 +107,25 @@ public class GameHandler {
      * * Handles the disconnect of one of the clients.
      */
     void clientLeft(ClientHandler client) {
-        goGame.currentGameState = GoGame.GameState.FINISHED;
-        //Notify other client. UPDATE_STATUS+FINISHED
-        if (client == player2) {
-            player1.sendLine("UPDATE_STATUS+" + goGame.currentGameState.name());
-            player1.sendLine("GAME_FINISHED+" + gameID + player1 +
-                    goGame.getPlayerScores() + "Other player disconnected.");
-        } else if (client == player1) {
-            player2.sendLine("UPDATE_STATUS+" + goGame.currentGameState.name());
-            player1.sendLine("GAME_FINISHED+" + gameID + player2 +
-                    goGame.getPlayerScores() + "Other player disconnected.");
+        if (!disconnectAttempted) {
+            goGame.currentGameState = GoGame.GameState.FINISHED;
+            //Notify other client. UPDATE_STATUS+FINISHED
+            if (client == player2) {
+                player1.sendLine("UPDATE_STATUS+" + goGame.currentGameState.name());
+                player1.sendLine("GAME_FINISHED+" + gameID + player1.getClientName() +
+                        goGame.getPlayerScores() + "Other player disconnected.");
+
+            } else if (client == player1) {
+                player2.sendLine("UPDATE_STATUS+" + goGame.currentGameState.name());
+                player2.sendLine("GAME_FINISHED+" + gameID + player2.getClientName() +
+                        goGame.getPlayerScores() + "Other player disconnected.");
+            }
+            //Remove players and game from the main server.
+            server.removeHandler(player1);
+            server.removeHandler(player2);
+            server.removeGame(this);
+            disconnectAttempted = true;
         }
-        //Remove players and game from the main server.
-        server.removeHandler(player1);
-        server.removeHandler(player2);
-        server.removeGame(this);
     }
 
     /**Returns the game's ID.*/

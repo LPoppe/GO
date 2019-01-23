@@ -5,7 +5,6 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 
 public class GoClient extends Thread {
 
@@ -13,62 +12,52 @@ public class GoClient extends Thread {
     private Socket sock;
     private BufferedReader in;
     private BufferedWriter out;
+    private GoController controller;
 
     //Game characteristics
     private Integer gameID;
     private String clientName;
-    private GoGame.PlayerColor clientColor;
-    private boolean isClientsTurn;
-    private Integer boardSize;
-    private String opponentName;
+    private GoGame.GameState gameState;
 
     /**Constructs a client object and attempts to create socket connection.
-     * @param host
-     * @param port  the server port
+     * The client processes all messages to and from the server.
+     * Sends information to the controller during the game.
      */
-    public GoClient(InetAddress host, int port) {
-        try {
-            this.sock = new Socket(host, port);
-            this.in = new BufferedReader(new InputStreamReader(this.sock.getInputStream()));
-            this.out = new BufferedWriter(new OutputStreamWriter(this.sock.getOutputStream()));
-        }  catch (UnknownHostException uhe) {
-            System.out.println("Server not found: " + uhe.getMessage());
-        } catch (IOException ioe) {
-            System.out.println("I/O error: " + ioe.getMessage());
+    public GoClient(GoController myController) {
+        this.controller = myController;
+
+        InetAddress host = null;
+        Integer port = null;
+
+        while (host == null) {
+            try {
+                host = InetAddress.getByName(readString("Please enter a host to connect to."));
+            } catch (UnknownHostException e) {
+                System.out.println("Host address not valid.");
+            }
         }
+
+        while (port == null) {
+            try {
+                port = Integer.parseInt(readString("Please enter a port number."));
+            } catch (NumberFormatException e) {
+                System.out.println("Enter port not valid. Try again.");
+            }
+        }
+        connectToStream(host, port);
+        start();
     }
 
     public static void main(String[] args) {
-        if (args.length != 2) {
-            System.out.println("Missing argument(s). Expecting: <address> <port>");
-            System.exit(0);
-        }
-        InetAddress host = null;
-        int port = 0;
-
-        try {
-            host = InetAddress.getByName(args[0]);
-        } catch (UnknownHostException e) {
-            System.out.println("No valid host address.");
-            System.exit(0);
-        }
-
-        try {
-            port = Integer.parseInt(args[1]);
-        } catch (NumberFormatException e) {
-            System.out.println("No valid port.");
-            System.exit(0);
-        }
-
-        GoClient client = new GoClient(host, port);
-        client.start();
+        GoClient client = new GoClient(new GoController());
     }
 
     /**Reads input from the server.
      */
     public void run() {
         sendHandshake(readString("Please enter your name: "));
-
+        String typeChoice = GoClient.readString("Please choose player type (H for human, A for AI): ");
+        controller.initPlayer(typeChoice);
         String serverMessage;
         try {
             while (true) {
@@ -81,6 +70,21 @@ public class GoClient extends Thread {
 
         }
     }
+
+    private void connectToStream(InetAddress host, int port) {
+        try {
+            this.sock = new Socket(host, port);
+            this.in = new BufferedReader(new InputStreamReader(this.sock.getInputStream()));
+            this.out = new BufferedWriter(new OutputStreamWriter(this.sock.getOutputStream()));
+        }  catch (UnknownHostException uhe) {
+            System.out.println("Server not found: " + uhe.getMessage());
+            System.exit(0);
+        } catch (IOException ioe) {
+            System.out.println("I/O error: " + ioe.getMessage());
+            System.exit(0);
+        }
+    }
+
 
     private void writeToStream(String message) {
         try {
@@ -128,6 +132,7 @@ public class GoClient extends Thread {
         //* The boolean is_leader (splitMessage[2]) is ignored in the current configuration.*/
         try {
             this.gameID = Integer.valueOf(splitMessage[1]);
+            this.gameState = GoGame.GameState.WAITING;
         } catch (NullPointerException ne) {
             printToGame("Handshake acknowledgement missing gameID.");
         }
@@ -143,23 +148,13 @@ public class GoClient extends Thread {
     }
 
     private void processConfigAcknowledgement(String[] splitMessage) {
-        printToGame(Arrays.toString(splitMessage));
-        try {
+        if (splitMessage.length != 6) {
+            printToGame("Configuration acknowledgement did not match expected length.");
+        } else {
             this.clientName = splitMessage[1];
             int colorNumber = Integer.parseInt(splitMessage[2]);
-
-            if (colorNumber == 1) {
-                this.clientColor = GoGame.PlayerColor.black;
-            } else if (colorNumber == 2) {
-                this.clientColor = GoGame.PlayerColor.white;
-            } else {
-                printToGame("Impossible tile color assigned to player.");
-            }
-
-            this.boardSize = Integer.valueOf(splitMessage[2]);
-            this.opponentName = splitMessage[4];
-        } catch (NullPointerException ne) {
-            printToGame("Config acknowledgement did not match expected length.");
+            controller.setGame(Integer.valueOf(splitMessage[3]), splitMessage[5], colorNumber);
+            this.gameState = GoGame.GameState.PLAYING;
         }
     }
 
@@ -175,11 +170,13 @@ public class GoClient extends Thread {
             String[] splitGameState = gameState.split(";");
 
             //Checks message length and update the current turn status.
-            if (splitGameState.length != 4) {
+            if (splitGameState.length != 3) {
                 printToGame("GameState message did not match expected length.");
             } else {
-                Integer move = Integer.valueOf(splitMessage[2]);
-                isClientsTurn = Integer.valueOf(splitGameState[3]) == clientColor.getPlayerColorNumber();
+                String move = splitMessage[2];
+                int currentPlayerColor = Integer.valueOf(splitGameState[1]);
+                String newBoard = splitGameState[2];
+                controller.updateAfterTurn(currentPlayerColor, move, newBoard);
             }
         }
     }
@@ -195,7 +192,7 @@ public class GoClient extends Thread {
 
     }
     private void processGameEnd(String[] splitMessage) {
-
+        this.gameState = GoGame.GameState.FINISHED;
     }
 
     private void sendHandshake(String input) {
@@ -207,7 +204,11 @@ public class GoClient extends Thread {
         writeToStream("SET_CONFIG+" + this.gameID + "+" + preferredColor + "+" + preferredBoardSize);
     }
 
-    private void sendMove(int tileIndex) {
+    /**Sends the player's move to the server. The controller handles
+     * retrieving this move and calling this method.
+     * @param tileIndex the tile on which the player places their move.
+     */
+    void sendMove(int tileIndex) {
         writeToStream("MOVE+" + this.gameID + "+" + this.clientName + "+" + tileIndex);
     }
 
@@ -232,22 +233,32 @@ public class GoClient extends Thread {
             printToGame("Encountered problem while exiting: " + ioe.getMessage());
         }
     }
-
+    private GoGame.GameState getGameState() {
+        return this.gameState;
+    }
     private void printToGame(String input) {
         System.out.println(input);
     }
 
+    /**
+     * Reads input from the terminal. Will repeat the prompt if nothing is written.
+     * @param input prompt asking for user input.
+     * @return the user input.
+     */
     private static String readString(String input) {
-        System.out.print(input);
         String message = null;
-        try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    System.in));
-            message = in.readLine();
-        } catch (IOException e) {
-            System.out.println("readString failed: " + e.getMessage());
-        }
 
-        return (message == null) ? "" : message.trim();
+        do {
+            try {
+                System.out.print(input);
+                BufferedReader in = new BufferedReader(new InputStreamReader(
+                        System.in));
+                message = in.readLine();
+            } catch (IOException e) {
+                System.out.println("readString failed: " + e.getMessage());
+            }
+        } while (message == null || message.equals(""));
+
+        return message.trim();
     }
 }
