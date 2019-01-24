@@ -117,9 +117,6 @@ public class GoClient extends Thread {
             case "UNKNOWN_COMMAND":
                 processUnknownCommandWarning(splitMessage);
                 break;
-            case "UPDATE_STATUS":
-                processStatusUpdate(splitMessage);
-                break;
             case "GAME_FINISHED":
                 processGameEnd(splitMessage);
                 break;
@@ -188,9 +185,6 @@ public class GoClient extends Thread {
 
     }
 
-    private void processStatusUpdate(String[] splitMessage) {
-
-    }
     private void processGameEnd(String[] splitMessage) {
         this.gameState = GoGame.GameState.FINISHED;
     }

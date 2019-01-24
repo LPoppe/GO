@@ -79,6 +79,7 @@ public class GoGame {
     public Board getBoard() {
         return this.goBoard;
     }
+
     //Requires player to exist in the map.
     //Can only be called after setPlayerOneColor() and setPlayerTwoColor().
     public PlayerColor getColorByClient(ClientHandler player) {

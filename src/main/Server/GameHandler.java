@@ -31,7 +31,7 @@ public class GameHandler {
      */
     //TODO GAME STARTS AS SOON AS PLAYER 2 IS CONNECTED, INSTEAD OF AFTER PLAYER 2 HANDSHAKE
     private synchronized void setNextState() {
-        if (player1 != null && player2 != null && goGame != null) {
+        if (player1.getClientName() != null && player2.getClientName() != null && goGame != null) {
             goGame.setPlayerTwo(player2);
             currentState = GameHandlerState.PLAYING;
             player1.sendLine("ACKNOWLEDGE_CONFIG+" + player1.getClientName()
@@ -91,14 +91,19 @@ public class GameHandler {
      * @return return false if a move is invalid. True if valid and processed.
      */
     synchronized void processMove(ClientHandler messagingPlayer, int playerMove) {
-        String checkerMessage = checker.checkMove(playerMove, goGame.getBoard());
+        String checkerMessage = checker.checkMove(goGame.getColorByClient(messagingPlayer).getPlayerColorNumber(),
+                playerMove, goGame.getBoard());
         if (!checkerMessage.equals("VALID")) {
             messagingPlayer.sendLine("INVALID_MOVE+" + checkerMessage);
         } else {
             goGame.changeBoardState(messagingPlayer, playerMove);
+            //The game state includes the current status, the current player (to make next move),
+            //and the new board represented as a string.
             String gameState = goGame.currentGameState.name() + ";"
                     + goGame.getCurrentPlayerColorNumber() + ";" + goGame.getBoardState();
-            broadcast("ACKNOWLEDGE_MOVE+" + gameID + "+" + gameState);
+            //Move contains the move made and the player's color.
+            String move = playerMove + ";" + goGame.getColorByClient(messagingPlayer).getPlayerColorNumber();
+            broadcast("ACKNOWLEDGE_MOVE+" + gameID + "+" + move + "+" + gameState);
             goGame.changePlayer();
             goGame.turnTimer++;
         }

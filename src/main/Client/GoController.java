@@ -41,9 +41,9 @@ public class GoController {
      //* Initializes the correct player object (AI or human, depending on the user input).*/
     void initPlayer(String choice) {
         if (choice.equals("H")) {
-            this.player = new HumanPlayer(this);
+            this.player = new HumanPlayer(this, this.gameBoard, thisPlayerColor);
         } else if (choice.equals("A")) {
-            this.player = new BasicPlayer(this);
+            this.player = new BasicPlayer(this, this.gameBoard, thisPlayerColor);
         }
     }
 
@@ -65,7 +65,7 @@ public class GoController {
                 int y = (int) (Math.round((mouseEvent.getSceneY() / goGui.getInitialSquareSize()) - 1));
                 System.out.println("int X = " + x + ", int Y = " + y);
 //                goGui.addStone(x, y, true);
-                player.userTileClicked();
+                player.userTileClicked(x, y);
             }
         });
     }
@@ -83,7 +83,7 @@ public class GoController {
         //}
     }
 
-    /**Receives data about the boardstate sent by the server and updates the board.
+    /**Receives data about the board state sent by the server and updates the board.
      * @param currentPlayerColorNumber The number corresponding to the player's tile color
      * @param move the move to be added to the board, containing the tile's color (int)
      *             and a tile index for the new tile.
@@ -143,5 +143,9 @@ public class GoController {
         } else {
             System.out.println("Impossible tile color assigned to player.");
         }
+    }
+
+    public void sendMoveToClient(int tileIndex) {
+        gameClient.sendMove(tileIndex);
     }
 }

@@ -1,7 +1,6 @@
 package main.Logic;
 
 public class ValidityChecker {
-
     public ValidityChecker() {
     }
 
@@ -10,30 +9,48 @@ public class ValidityChecker {
      * @param playerMove the tile index and player color associated with a player's move.
      * @return "VALID" if the player's move is valid. Otherwise the appropriate error message.
      */
-    public String checkMove(int playerMove, Board board) {
+    public String checkMove(int playerColorNumber, int playerMove, Board board) {
         //return ERROR MESSAGE if:
         //move is not a location on the board.
-        isValidCoordinate();
+        if (!isValidCoordinate(playerMove, board)) {
+            return "Coordinate is not a valid location on the board.";
+        }
         //tile is not empty
-        isTileEmpty();
+        if (!isTileEmpty(playerMove, board)) {
+            return "Chosen tile is already occupied.";
+        }
+        Board boardCopy = deepCopyBoard(board);
+        boardCopy.setBoardState(playerColorNumber, playerMove);
         //tile does not recreate previous board state.
-        doesNotBreakKoRule();
+        if (!doesNotBreakKoRule(boardCopy.getBoardState(), boardCopy)) {
+            return "Move breaks Ko rule.";
+        }
         //if move is valid, return "VALID".
         //else return errorMessage.
-        return null;
+        return "VALID";
     }
 
-    private boolean isValidCoordinate() {
-        return false;
+    /**
+     * Makes a deep copy of the provided board, so that it can safely be
+     * altered without changing the actual game board.
+     * @param board the game board to be copied
+     * @return a new Board object.
+     */
+    private Board deepCopyBoard(Board board) {
+        return new Board(board);
     }
 
-    private boolean isTileEmpty() {
-        return false;
+    private boolean isValidCoordinate(int playerMove, Board board) {
+        return board.getBoardSize() > playerMove;
+    }
+
+    private boolean isTileEmpty(int playerMove, Board board) {
+        return board.getTileContent(playerMove) == 0;
     }
 
     /**Uses last turn's board to check if a previous board state is recreated by a move.
      */
-    private boolean doesNotBreakKoRule() {
-        return false;
+    private boolean doesNotBreakKoRule(String newBoardState, Board board) {
+        return !board.getBoardHistory().contains(newBoardState);
     }
 }

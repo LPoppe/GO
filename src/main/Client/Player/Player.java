@@ -1,12 +1,13 @@
 package main.Client.Player;
 
-import main.Client.GoController;
-
 public interface Player {
+    default void determineMove() {
 
-    void determineMove();
+    }
 
-    void userTileClicked();
+    default void userTileClicked(int x, int y) {
+
+    }
 
     void notifyTurn();
     //updateGroups
