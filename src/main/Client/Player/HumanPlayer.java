@@ -21,7 +21,11 @@ public class HumanPlayer implements Player {
     }
 
     private void determineMove(int xCoordinate, int yCoordinate) {
+        //TODO -1 if passing.
+        //TODO Add exit and pass button.
+        System.out.println(gameBoard);
         int tileIndex = gameBoard.getTileIndex(xCoordinate, yCoordinate);
+        System.out.println(tileIndex);
         //Returns "VALID" if valid, else an error message.
         String moveValidity = checker.checkMove(myPlayerColor.getPlayerColorNumber(), tileIndex, gameBoard);
         //If the move was valid, the player sends the move to the controller,

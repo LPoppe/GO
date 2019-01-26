@@ -28,10 +28,12 @@ public class Group {
     public void determineFreedoms() {
         for (int tile : groupTiles) {
             for (Integer neighbor : getNeighborTiles(tile, gameBoard)) {
-                if (neighbor == 0) {
+                if (gameBoard.getTileContent(neighbor) == 0) {
                     if (!freedomTiles.contains(neighbor)) {
                         freedomTiles.add(neighbor);
                     }
+                } else if (gameBoard.getTileContent(neighbor) != 0) {
+                    freedomTiles.remove(neighbor);
                 }
             }
         }
@@ -43,7 +45,7 @@ public class Group {
      * @return a list of the neighboring tile indices.
      */
     //TODO add option to search at greater distance to determine a good move position.
-    public static List<Integer> getNeighborTiles(int tileIndex, Board board) {
+    static List<Integer> getNeighborTiles(int tileIndex, Board board) {
         Pair<Integer, Integer> tileCoordinates = board.getTileCoordinates(tileIndex);
         List<Integer> tileNeighbors = new ArrayList<>();
         int xCoordinate = tileCoordinates.getKey();
@@ -52,7 +54,9 @@ public class Group {
         for (int colNum = yCoordinate - 1; colNum <= (yCoordinate + 1); colNum += 1) {
             for (int rowNum = xCoordinate - 1; rowNum <= (xCoordinate + 1); rowNum += 1) {
                 if (!((colNum == yCoordinate) && (rowNum == xCoordinate))) {
-                    if (isWithinBoard(colNum, rowNum, board)) {
+                    //Check if coordinate is in board, and if it is directly connected.
+                    if (isWithinBoard(colNum, rowNum, board) &&
+                            (colNum == yCoordinate || rowNum == xCoordinate)) {
                         Integer neighborTile = board.getTileIndex(rowNum, colNum);
                         tileNeighbors.add(neighborTile);
                     }
@@ -86,7 +90,7 @@ public class Group {
         return tileColor;
     }
 
-    public void addTileToGroup(int tileIndex) {
+    public void addTileToGroup(Integer tileIndex) {
         freedomTiles.remove(tileIndex);
         groupTiles.add(tileIndex);
     }

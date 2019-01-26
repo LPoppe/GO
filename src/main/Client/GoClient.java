@@ -1,5 +1,6 @@
 package main.Client;
 import main.Logic.GoGame;
+import main.Server.GameHandler;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -17,7 +18,7 @@ public class GoClient extends Thread {
     //Game characteristics
     private Integer gameID;
     private String clientName;
-    private GoGame.GameState gameState;
+    private GameHandler.GameHandlerState gameState;
 
     /**Constructs a client object and attempts to create socket connection.
      * The client processes all messages to and from the server.
@@ -56,8 +57,6 @@ public class GoClient extends Thread {
      */
     public void run() {
         sendHandshake(readString("Please enter your name: "));
-        String typeChoice = GoClient.readString("Please choose player type (H for human, A for AI): ");
-        controller.initPlayer(typeChoice);
         String serverMessage;
         try {
             while (true) {
@@ -129,7 +128,6 @@ public class GoClient extends Thread {
         //* The boolean is_leader (splitMessage[2]) is ignored in the current configuration.*/
         try {
             this.gameID = Integer.valueOf(splitMessage[1]);
-            this.gameState = GoGame.GameState.WAITING;
         } catch (NullPointerException ne) {
             printToGame("Handshake acknowledgement missing gameID.");
         }
@@ -144,15 +142,33 @@ public class GoClient extends Thread {
         }
     }
 
+    /**Starts the client's side of the game.
+     * @param splitMessage contains ACKNOWLEDGE_CONFIG, PLAYER_NAME,
+     *                    COLOR, SIZE, GAME_STATE, OPPONENT.
+     */
     private void processConfigAcknowledgement(String[] splitMessage) {
         if (splitMessage.length != 6) {
             printToGame("Configuration acknowledgement did not match expected length.");
         } else {
             this.clientName = splitMessage[1];
             int colorNumber = Integer.parseInt(splitMessage[2]);
+            System.out.println(splitMessage[3] + " ......" + splitMessage[5]);
             controller.setGame(Integer.valueOf(splitMessage[3]), splitMessage[5], colorNumber);
-            this.gameState = GoGame.GameState.PLAYING;
+            this.gameState = GameHandler.GameHandlerState.PLAYING;
         }
+    }
+
+    /**Asks the user for input about what player type they would like to use.
+     * @return either "H" or "A", depending on the player type that should be used in the game.
+     */
+    String askForPlayerType() {
+        //Upon setting the game in processConfigAcknowledgment(), the controller will create
+        // a player based on this input.
+        String typeChoice;
+        do {
+            typeChoice = GoClient.readString("Please choose player type (H for human, A for AI): ").toUpperCase();
+        } while (!(typeChoice.equals("H") || typeChoice.equals("A")));
+        return typeChoice;
     }
 
     /**Processes a message containing a new move made on the board by this client or the opponent.
@@ -179,14 +195,16 @@ public class GoClient extends Thread {
     }
 
     private void processInvalidMoveSent(String[] splitMessage) {
-
+        printToGame("Move was invalid. Try again.");
+        controller.retryMove();
     }
+
     private void processUnknownCommandWarning(String[] splitMessage) {
 
     }
 
     private void processGameEnd(String[] splitMessage) {
-        this.gameState = GoGame.GameState.FINISHED;
+        this.gameState = GameHandler.GameHandlerState.FINISHED;
     }
 
     private void sendHandshake(String input) {
@@ -200,14 +218,11 @@ public class GoClient extends Thread {
 
     /**Sends the player's move to the server. The controller handles
      * retrieving this move and calling this method.
-     * @param tileIndex the tile on which the player places their move.
+     * @param tileIndex the tile on which the player places their move. -1 if passing.
      */
+    //TODO sendMove happens out of turn regularly
     void sendMove(int tileIndex) {
         writeToStream("MOVE+" + this.gameID + "+" + this.clientName + "+" + tileIndex);
-    }
-
-    private void sendPass() {
-        writeToStream("PASS+" + this.gameID + "+" + this.clientName);
     }
 
     private void sendExit() {
@@ -220,6 +235,7 @@ public class GoClient extends Thread {
      */
     private void closeClient() {
         try {
+            this.sendExit();
             this.in.close();
             this.out.close();
             this.sock.close();
@@ -227,9 +243,11 @@ public class GoClient extends Thread {
             printToGame("Encountered problem while exiting: " + ioe.getMessage());
         }
     }
-    private GoGame.GameState getGameState() {
+    private GameHandler.GameHandlerState getGameState() {
         return this.gameState;
     }
+
+    //TODO Change from terminal to location on GUI. Also requires text input field on GUI, and immediate start of GUI.
     private void printToGame(String input) {
         System.out.println(input);
     }
@@ -239,7 +257,7 @@ public class GoClient extends Thread {
      * @param input prompt asking for user input.
      * @return the user input.
      */
-    private static String readString(String input) {
+    static String readString(String input) {
         String message = null;
 
         do {
@@ -255,4 +273,5 @@ public class GoClient extends Thread {
 
         return message.trim();
     }
+
 }

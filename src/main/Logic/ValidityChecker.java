@@ -22,7 +22,7 @@ public class ValidityChecker {
         Board boardCopy = deepCopyBoard(board);
         boardCopy.setBoardState(playerColorNumber, playerMove);
         //tile does not recreate previous board state.
-        if (!doesNotBreakKoRule(boardCopy.getBoardState(), boardCopy)) {
+        if (!doesNotBreakKoRule(boardCopy.getBoardState(), board)) {
             return "Move breaks Ko rule.";
         }
         //if move is valid, return "VALID".
@@ -41,7 +41,7 @@ public class ValidityChecker {
     }
 
     private boolean isValidCoordinate(int playerMove, Board board) {
-        return board.getBoardSize() > playerMove;
+        return board.getBoardFields().length > playerMove;
     }
 
     private boolean isTileEmpty(int playerMove, Board board) {

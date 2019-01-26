@@ -21,6 +21,7 @@ public class BasicPlayer implements Player {
 
     @Override
     public void determineMove() {
+        //TODO -1 if passing.
         int calculatedMove;
         String moveValidity;
         //Check validity

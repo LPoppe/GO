@@ -3,6 +3,7 @@ package main.Logic;
 import javafx.util.Pair;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Board {
 
@@ -10,10 +11,10 @@ public class Board {
     private String boardState;
     //tiles on the current board
     private Integer[] currentBoard;
-    private Map<Integer, Group> tileGroups = new HashMap<>();
+    private ConcurrentHashMap<Integer, Group> tileGroups = new ConcurrentHashMap<>();
 
     //contains the index per location on the board
-    private static Integer[] boardFields;
+    private Integer[] boardFields;
     private List<String> boardHistory = new ArrayList<>();
 
     /**Updates the list of board strings (boardHistory).
@@ -38,6 +39,7 @@ public class Board {
     public Board(Integer preferredSize) {
         this.boardSize = preferredSize;
         this.boardState = String.join("", Collections.nCopies(boardSize * boardSize, "0"));
+        System.out.println("The board state at init = " + boardState);
         initializeBoard();
     }
 
@@ -45,7 +47,9 @@ public class Board {
         this.boardSize = board.getBoardSize();
         this.boardState = board.getBoardState();
         this.currentBoard = board.currentBoard.clone();
+        this.boardFields = board.getBoardFields().clone();
         this.boardHistory = new ArrayList<>(board.getBoardHistory());
+        this.tileGroups = new ConcurrentHashMap<>(board.getAllGroups());
     }
 
     public String getBoardState() {
@@ -53,6 +57,12 @@ public class Board {
     }
     public Integer getBoardSize() {
         return this.boardSize;
+    }
+    public Integer[] getCurrentBoard() {
+        return this.currentBoard;
+    }
+    public Integer[] getBoardFields() {
+        return this.boardFields;
     }
 
     //Getters for the group mappings.
@@ -69,21 +79,21 @@ public class Board {
 
     /**Returns the tile index given an x and y coordinate.*/
     public Integer getTileIndex(int xCoordinate, int yCoordinate) {
-        return boardSize * xCoordinate + yCoordinate;
+        return xCoordinate + (yCoordinate * boardSize);
     }
     /**Returns the tile content at a certain location on the board.*/
     public Integer getTileContent(int x, int y) {
-        return this.currentBoard[x + y * boardSize];
+        return this.currentBoard[getTileIndex(x, y)];
     }
     public Integer getTileContent(int tileIndex) {
-        return this.currentBoard[tileIndex * boardSize];
+        return this.currentBoard[tileIndex];
     }
 
     /**Creates an array of indexes for all tile location and an initial empty board.
      */
     private void initializeBoard() {
         boardFields = new Integer[boardSize * boardSize];
-        Arrays.setAll(boardFields, index -> 1 + index);
+        Arrays.setAll(boardFields, index -> index);
         currentBoard = new Integer[boardSize * boardSize];
         Arrays.fill(currentBoard, Tiles.empty.tileNumber);
     }
@@ -112,22 +122,39 @@ public class Board {
         for (Integer tile : deadTiles) {
             currentBoard[tile] = 0;
         }
-        this.boardState = Arrays.toString(currentBoard);
+        updateBoardState();
     }
 
+    /**Updates the String boardState by replacing it with a new string built from currentBoard.
+     */
+    private void updateBoardState() {
+        StringBuilder boardBuilder = new StringBuilder();
+        for (int tile : currentBoard) {
+            boardBuilder.append(tile);
+        }
+        this.boardState = boardBuilder.toString();
+    }
+
+    //TODO Mapping probably not necessary - easier to merge?
     private void addToGroup(Tiles tile, int tileIndex) {
         List<Integer> tileNeighbors = Group.getNeighborTiles(tileIndex, this);
-        boolean groupFound = false;
+        int groupsFound = 0;
         for (Integer neighbor: tileNeighbors) {
             if (tileGroups.keySet().contains(neighbor) && tile == tileGroups.get(neighbor).getTileColor()) {
                 tileGroups.put(tileIndex, tileGroups.get(neighbor));
                 tileGroups.get(neighbor).addTileToGroup(tileIndex);
-                groupFound = true;
+                groupsFound++;
             }
         }
-        if (!groupFound) {
+        if (groupsFound == 0) {
             tileGroups.put(tileIndex, new Group(tile, tileIndex, this));
+        } else if (groupsFound > 1) {
+            mergeGroups(tileIndex);
         }
+    }
+    //TODO Tile can be in multiple groups -> how do I connect/merge groups?
+    private void mergeGroups(int tileIndex) {
+
     }
 
     private List<Integer> updateGroupFreedoms() {

@@ -62,26 +62,31 @@ public class ClientHandler extends Thread {
         String cmd = splitMessage[0];
 
         switch (cmd) {
-            //Identification to the server. Set name to the player name provided.
-            //Acknowledges the player and sends back game ID and whether player is first to connect.
             case "HANDSHAKE":
+                //Identification to the server. Set name to the player name provided.
+                //Acknowledges the player and sends back game ID and whether player is first to connect.
                 processHandshake(splitMessage);
                 break;
-            //Set the game configuration according to the preferred color and board size provided.
             case "SET_CONFIG":
+                //Set the game configuration according to the preferred color and board size provided.
                 processConfig(splitMessage);
                 break;
             case "MOVE":
+                //Determines if move is valid, updates the board, and sends the new game status to both players.
                 processMove(splitMessage);
                 break;
             case "EXIT":
                 processExit(splitMessage);
+                break;
+            case "SET_REMATCH":
+                processRematch(splitMessage);
                 break;
             default:
                 unknownCommand("Command not recognised.");
                 server.printOnServer("No match to message found.");
         }
     }
+
 
     /**Needed to convert isFirstPlayer to int.
      * @param value true or false, depending on whether the client was the first player to connect.
@@ -124,9 +129,16 @@ public class ClientHandler extends Thread {
         } else {
             this.clientName = splitMessage[1];
             sendLine("ACKNOWLEDGE_HANDSHAKE+" + gameHandler.getGameID() + "+" + booleanToInt(this.isFirstPlayer));
+            gameHandler.handshakeReceived();
+            if (this == gameHandler.getPlayer1()) {
+                requestConfig();
+            }
         }
     }
 
+    private void requestConfig() {
+        sendLine("REQUEST_CONFIG+Please provide game configuration");
+    }
     /**Sets game configuration using the settings provided by the client.
      * Client needs to have been the first player to connect to the server.
      * @param splitMessage should contain SET_CONFIG, GAME_ID ,PREFERRED_COLOR, BOARD_SIZE.
@@ -179,7 +191,7 @@ public class ClientHandler extends Thread {
         } else {
             if (gameHandler.getCurrentPlayer() == this) {
                 int move = Integer.parseInt(splitMessage[3]);
-                gameHandler.processMove(this, move);
+                    gameHandler.processMove(this, move);
             } else {
                 sendLine("INVALID_MOVE+" + "Attempt at sending move out of turn.");
                 server.printOnServer(clientName + ": Attempt at sending move out of turn.");
@@ -187,6 +199,11 @@ public class ClientHandler extends Thread {
         }
     }
 
+    /**Processes the response to the REQUEST_REMATCH message.
+     * @param splitMessage SET_REMATCH + '1' if rematch '0' if not.
+     */
+    private void processRematch(String[] splitMessage) {
+    }
     /**Creates clean disconnect between clients and server after receiving exit message.
      * Shuts down anyway when the client does not provide the correct string,
      * because an EXIT command was sent, and the client may have already disconnected itself.

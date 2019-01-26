@@ -27,10 +27,6 @@ public class GoGame {
     private ClientHandler blackClient;
     private ClientHandler whiteClient;
 
-    public enum GameState { WAITING, PLAYING, FINISHED }
-    public GameState currentGameState;
-
-
     public Integer turnTimer;
 
     public GoGame(ClientHandler player1, PlayerColor color, Integer boardSize) {
@@ -38,7 +34,6 @@ public class GoGame {
         setPlayerOneColor(player1, color);
         this.currentPlayerColor = PlayerColor.black;
 
-        this.currentGameState = GameState.WAITING;
         this.goBoard.addToHistory(goBoard.getBoardState());
         this.turnTimer = 0;
     }
@@ -109,9 +104,10 @@ public class GoGame {
      * @return the new boardString to be sent to the players.
      */
     public void changeBoardState(ClientHandler messagingPlayer, int playerMove) {
-        if (getColorByClient(messagingPlayer) != currentPlayerColor) {
+        if (getColorByClient(messagingPlayer) == currentPlayerColor) {
             goBoard.setBoardState(getColorByClient(messagingPlayer).playerColorNumber, playerMove);
             goBoard.addToHistory(goBoard.getBoardState());
+            changePlayer();
         } else {
             System.out.println("Wrong player. This should not be reached.");
         }
@@ -123,7 +119,8 @@ public class GoGame {
      * @param playerColor the color of the player being scored.
      * @return the player's score
      */
-    public double calculateScore(Board board, PlayerColor playerColor) {
+    //TODO Calculate scores not implemented yet. Don't forget Group.getNeighbors!
+    public static double calculateScore(Board board, PlayerColor playerColor) {
         return 0.0;
     }
 
@@ -133,12 +130,15 @@ public class GoGame {
         return scoreBlack + ";" + scoreWhite;
     }
 
-    /**
-     * Called when both players have passed after one another.
+    /**Called when both players have passed after one another.
      */
-    public void determineWinner(Board board) {
+    public static PlayerColor determineWinner(Board board) {
         double scoreBlack = calculateScore(board, PlayerColor.black);
         double scoreWhite = calculateScore(board, PlayerColor.white);
+        if (scoreBlack >= scoreWhite) {
+            return PlayerColor.black;
+        } else {
+            return PlayerColor.white;
         }
-        //
+    }
 }

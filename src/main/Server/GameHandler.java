@@ -3,9 +3,6 @@ package main.Server;
 import main.Logic.GoGame;
 import main.Logic.ValidityChecker;
 
-import java.io.IOException;
-import java.net.SocketException;
-
 /**Combines two opponent GoClients of a Go game played on the GoServer.
  */
 public class GameHandler {
@@ -13,15 +10,17 @@ public class GameHandler {
     private ClientHandler player2;
     private GoGame goGame;
     private GoServer server;
-    private final Integer gameID;
+    private Integer gameID;
     private boolean disconnectAttempted = false;
-    public enum GameHandlerState { INIT, PLAYING }
+    public enum GameHandlerState { INIT, PLAYING, FINISHED }
     private GameHandlerState currentState;
     private ValidityChecker checker;
+    private boolean lastPlayerPassed;
 
     GameHandler(GoServer server, int gameID) {
         this.checker = new ValidityChecker();
         this.server = server;
+        server.printOnServer("GAMEID = " + gameID);
         this.gameID = gameID;
         this.currentState = GameHandlerState.INIT;
     }
@@ -31,23 +30,31 @@ public class GameHandler {
      */
     //TODO GAME STARTS AS SOON AS PLAYER 2 IS CONNECTED, INSTEAD OF AFTER PLAYER 2 HANDSHAKE
     private synchronized void setNextState() {
-        if (player1.getClientName() != null && player2.getClientName() != null && goGame != null) {
-            goGame.setPlayerTwo(player2);
-            currentState = GameHandlerState.PLAYING;
-            player1.sendLine("ACKNOWLEDGE_CONFIG+" + player1.getClientName()
-                    + "+" + goGame.getColorByClient(player1).getPlayerColorNumber() + "+" + goGame.getBoardSize()
-                    + "+" + goGame.getBoardState() + "+" + player2.getClientName());
-            player2.sendLine("ACKNOWLEDGE_CONFIG+" + player2.getClientName()
-                    + "+" + goGame.getColorByClient(player2).getPlayerColorNumber() + "+" + goGame.getBoardSize()
-                    + "+" + goGame.getBoardState() + "+" + player1.getClientName());
+        if (player1 != null && player2 != null && goGame != null) {
+            if (player1.getClientName() != null && player2.getClientName() != null) {
+                goGame.setPlayerTwo(player2);
+                currentState = GameHandlerState.PLAYING;
+                player1.sendLine("ACKNOWLEDGE_CONFIG+" + player1.getClientName()
+                        + "+" + goGame.getColorByClient(player1).getPlayerColorNumber() + "+" + goGame.getBoardSize()
+                        + "+" + goGame.getBoardState() + "+" + player2.getClientName());
+                player2.sendLine("ACKNOWLEDGE_CONFIG+" + player2.getClientName()
+                        + "+" + goGame.getColorByClient(player2).getPlayerColorNumber() + "+" + goGame.getBoardSize()
+                        + "+" + goGame.getBoardState() + "+" + player1.getClientName());
+            } else {
+                currentState = GameHandlerState.INIT;
+            }
         } else {
             currentState = GameHandlerState.INIT;
         }
     }
 
-    private void requestConfig(ClientHandler firstPlayer) {
-        firstPlayer.sendLine("REQUEST_CONFIG+Please provide game configuration");
+    /**Called by the clientHandler to check if it needs to ask the player for a configuration.
+     *@return the first player to connect.
+     */
+    ClientHandler getPlayer1() {
+        return player1;
     }
+
 
     /**Requires the user command to match $PREFERRED_COLOR+$BOARD_SIZE.
      * @param firstPlayer ClientHandler of client that provides the configuration.
@@ -64,7 +71,6 @@ public class GameHandler {
      */
     void addPlayer1(ClientHandler newPlayer) {
         this.player1 = newPlayer;
-        this.requestConfig(this.player1);
         setNextState();
     }
 
@@ -74,6 +80,12 @@ public class GameHandler {
      */
     void addPlayer2(ClientHandler newPlayer) {
         this.player2 = newPlayer;
+        setNextState();
+    }
+
+    void handshakeReceived() {
+        //The game will only start after receiving a handshake from both players.
+        // The clientHandler calls this to notify the gameHandler the game might be ready to start.
         setNextState();
     }
 
@@ -91,21 +103,32 @@ public class GameHandler {
      * @return return false if a move is invalid. True if valid and processed.
      */
     synchronized void processMove(ClientHandler messagingPlayer, int playerMove) {
-        String checkerMessage = checker.checkMove(goGame.getColorByClient(messagingPlayer).getPlayerColorNumber(),
-                playerMove, goGame.getBoard());
-        if (!checkerMessage.equals("VALID")) {
-            messagingPlayer.sendLine("INVALID_MOVE+" + checkerMessage);
+        //First check if both players have passed:
+        if (playerMove == -1) {
+            if (lastPlayerPassed) {
+                ClientHandler winner = goGame.getClientByColor(GoGame.determineWinner(goGame.getBoard()));
+                broadcast("GAME_FINISHED+" + "+" + gameID + "+" + winner.getClientName() + "+" +
+                        goGame.getPlayerScores() + "+" + "Both players passed turn.");
+            }
         } else {
-            goGame.changeBoardState(messagingPlayer, playerMove);
-            //The game state includes the current status, the current player (to make next move),
-            //and the new board represented as a string.
-            String gameState = goGame.currentGameState.name() + ";"
-                    + goGame.getCurrentPlayerColorNumber() + ";" + goGame.getBoardState();
-            //Move contains the move made and the player's color.
-            String move = playerMove + ";" + goGame.getColorByClient(messagingPlayer).getPlayerColorNumber();
-            broadcast("ACKNOWLEDGE_MOVE+" + gameID + "+" + move + "+" + gameState);
-            goGame.changePlayer();
-            goGame.turnTimer++;
+            String checkerMessage = checker.checkMove(goGame.getColorByClient(messagingPlayer).getPlayerColorNumber(),
+                    playerMove, goGame.getBoard());
+            if (!checkerMessage.equals("VALID")) {
+                messagingPlayer.sendLine("INVALID_MOVE+" + checkerMessage);
+            } else {
+                //Reset the pass tracker.
+                lastPlayerPassed = false;
+                //Update the board.
+                goGame.changeBoardState(messagingPlayer, playerMove);
+                //The game state includes the current status, the current player (to make next move),
+                //and the new board represented as a string.
+                String gameState = this.currentState + ";"
+                        + goGame.getCurrentPlayerColorNumber() + ";" + goGame.getBoardState();
+                //Move contains the move made and the player's color.
+                String move = playerMove + ";" + goGame.getColorByClient(messagingPlayer).getPlayerColorNumber();
+                broadcast("ACKNOWLEDGE_MOVE+" + gameID + "+" + move + "+" + gameState);
+                goGame.turnTimer++;
+            }
         }
     }
 
@@ -113,16 +136,17 @@ public class GameHandler {
      * * Handles the disconnect of one of the clients.
      */
     void clientLeft(ClientHandler client) {
+        //TODO nullpointerexception if client 2 does not exist yet.
         if (!disconnectAttempted) {
-            goGame.currentGameState = GoGame.GameState.FINISHED;
+            this.currentState = GameHandlerState.FINISHED;
             //Notify other client. UPDATE_STATUS+FINISHED
             if (client == player2) {
-                player1.sendLine("UPDATE_STATUS+" + goGame.currentGameState.name());
+                player1.sendLine("UPDATE_STATUS+" + this.currentState);
                 player1.sendLine("GAME_FINISHED+" + gameID + player1.getClientName() +
                         goGame.getPlayerScores() + "Other player disconnected.");
 
             } else if (client == player1) {
-                player2.sendLine("UPDATE_STATUS+" + goGame.currentGameState.name());
+                player2.sendLine("UPDATE_STATUS+" + this.currentState);
                 player2.sendLine("GAME_FINISHED+" + gameID + player2.getClientName() +
                         goGame.getPlayerScores() + "Other player disconnected.");
             }

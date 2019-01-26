@@ -3,6 +3,7 @@ package main.Client;
 import javafx.event.EventHandler;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.util.Pair;
 import main.Client.Player.BasicPlayer;
 import main.Client.Player.HumanPlayer;
 import main.Client.Player.Player;
@@ -39,11 +40,14 @@ public class GoController {
     }
 
      //* Initializes the correct player object (AI or human, depending on the user input).*/
-    void initPlayer(String choice) {
+    private void initPlayer(String choice) {
         if (choice.equals("H")) {
             this.player = new HumanPlayer(this, this.gameBoard, thisPlayerColor);
         } else if (choice.equals("A")) {
             this.player = new BasicPlayer(this, this.gameBoard, thisPlayerColor);
+        }
+        if (isClientsTurn) {
+            player.notifyTurn();
         }
     }
 
@@ -55,18 +59,13 @@ public class GoController {
         goGui.startGUI();
         goGui.setBoardSize(boardSize);
 
-        goGui.getPrimaryStage().addEventFilter(MouseEvent.MOUSE_PRESSED, new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                System.out.println("Mouse click detected! " + mouseEvent.getSource());
-                System.out.println("X = " + mouseEvent.getSceneX() + ", Y = " + mouseEvent.getSceneY());
-
-                int x = (int) (Math.round((mouseEvent.getSceneX() / goGui.getInitialSquareSize()) - 1));
-                int y = (int) (Math.round((mouseEvent.getSceneY() / goGui.getInitialSquareSize()) - 1));
-                System.out.println("int X = " + x + ", int Y = " + y);
+        goGui.getPrimaryStage().addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
+            int x = (int) (Math.round((mouseEvent.getSceneX() / goGui.getInitialSquareSize()) - 1));
+            int y = (int) (Math.round((mouseEvent.getSceneY() / goGui.getInitialSquareSize()) - 1));
+            System.out.println("X = " + mouseEvent.getSceneX() + ", Y = " + mouseEvent.getSceneY());
+            System.out.println("int X = " + x + ", int Y = " + y);
 //                goGui.addStone(x, y, true);
-                player.userTileClicked(x, y);
-            }
+            player.userTileClicked(x, y);
         });
     }
 
@@ -76,7 +75,24 @@ public class GoController {
         updateGUI();
     }
 
+    /**Fully refreshes the content of the GUI board.
+     */
     private void updateGUI() {
+        for (int tile : gameBoard.getBoardFields()) {
+            Pair<Integer, Integer> tileCoordinates = gameBoard.getTileCoordinates(tile);
+            int xCoordinate = tileCoordinates.getKey();
+            int yCoordinate = tileCoordinates.getValue();
+            int tileColor = gameBoard.getTileContent(tile);
+            if (tileColor == 0) {
+                goGui.removeStone(xCoordinate, yCoordinate);
+            } else if (tileColor == 1) {
+                goGui.addStone(xCoordinate, yCoordinate, false);
+            } else if (tileColor == 2) {
+                goGui.addStone(xCoordinate, yCoordinate, true);
+            } else {
+                throw new RuntimeException("In updateGUI: Tile color does not exist.");
+            }
+        }
         //for (tileToChange : tiles) {
         //tileToChange[0], tileToChange[1], tileToChange[2]
         //goGui.addStone(x, y, isWhite);
@@ -91,8 +107,8 @@ public class GoController {
      */
     void updateTurnFromServer(int currentPlayerColorNumber, String move, String newBoard) {
         String[] moveDetails = move.split(";");
-        int playerColorNumber  = Integer.valueOf(moveDetails[0]);
-        int tileIndex = Integer.valueOf(moveDetails[1]);
+        int playerColorNumber  = Integer.valueOf(moveDetails[1]);
+        int tileIndex = Integer.valueOf(moveDetails[0]);
         updateBoard(playerColorNumber, tileIndex);
 
         List<String> gameBoardHistory = gameBoard.getBoardHistory();
@@ -103,9 +119,7 @@ public class GoController {
         System.out.println("Move made: " + Arrays.toString(moveDetails));
 
         isClientsTurn = currentPlayerColorNumber == thisPlayerColor.getPlayerColorNumber();
-        if (isClientsTurn) {
-            player.notifyTurn();
-        }
+        player.notifyTurn();
     }
 
     /**
@@ -116,12 +130,14 @@ public class GoController {
         setBoard(boardSize);
         setOpponent(opponent);
         setPlayerColor(colorNumber);
+        String typeChoice = gameClient.askForPlayerType();
+        initPlayer(typeChoice);
+        startGUI(boardSize);
     }
     private void setBoard(Integer boardSize) {
         this.gameBoard = new Board(boardSize);
         System.out.println("Boardsize set to: " + boardSize);
         gameBoard.addToHistory(gameBoard.getBoardState());
-        startGUI(boardSize);
     }
 
     private void setOpponent(String opponent) {
@@ -147,5 +163,9 @@ public class GoController {
 
     public void sendMoveToClient(int tileIndex) {
         gameClient.sendMove(tileIndex);
+    }
+
+    void retryMove() {
+        player.notifyTurn();
     }
 }

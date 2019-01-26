@@ -11,7 +11,7 @@ public class GoServer {
     /**The list handlerThreads saves all connected clients.
      * The GameThreads map stores all running games.**/
     private List<ClientHandler> handlerThreads;
-    private Map<GameHandler, Integer> gameThreads;
+    private Map<GameHandler, Integer> games;
     private ServerSocket serverSock;
 
     /**Starts a server application.
@@ -23,7 +23,7 @@ public class GoServer {
 
     public GoServer() {
         this.handlerThreads = new ArrayList<ClientHandler>();
-        this.gameThreads = new HashMap<GameHandler, Integer>();
+        this.games = new HashMap<GameHandler, Integer>();
         //try to use port. Return error and allow new port number to be entered if port already in use. Define own exceptions!!
     }
 
@@ -40,7 +40,6 @@ public class GoServer {
             Socket sockP2;
             int gameID;
         //TODO: If client1 disconnects before client2 enters, the next client will be client 2.
-            // TODO: Shutting down both clients makes the server loose its shit.
             // TODO: probably fixed if I add a waiting list for clients and call 'try start game' method
             // TODO: each time a new client arrives.
             try {
@@ -73,6 +72,7 @@ public class GoServer {
     /**Asks the user for the port to be used. Sets the server's port number if available.
      * Port number cannot be a system port.
      */
+    //TODO setPort can get stuck in an infinite loop, but I'm not sure what caused it.
     private void setPort() {
         printOnServer("Please provide a port number above 1023: ");
         Scanner readPort = new Scanner(System.in);
@@ -83,6 +83,7 @@ public class GoServer {
             }
         } while (!startServerSocket(input));
         System.out.println("Port number accepted.");
+        readPort.close();
     }
 
     /**Checks the availability of a given port number.
@@ -113,7 +114,7 @@ public class GoServer {
         int gameID;
         do {
             gameID = 100 + r.nextInt(900);
-        } while (gameThreads.containsValue(gameID));
+        } while (games.containsValue(gameID));
         return gameID;
     }
 
@@ -136,11 +137,11 @@ public class GoServer {
     }
 
     private synchronized void addGame(GameHandler handler, int gameID) {
-        this.gameThreads.put(handler, gameID);
+        this.games.put(handler, gameID);
     }
 
     synchronized void removeGame(GameHandler handler) {
-        this.gameThreads.remove(handler);
+        this.games.remove(handler);
     }
 
     synchronized void printOnServer(String message) {
