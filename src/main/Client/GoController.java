@@ -1,7 +1,5 @@
 package main.Client;
 
-import javafx.event.EventHandler;
-import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Pair;
 import main.Client.Player.BasicPlayer;
@@ -12,7 +10,6 @@ import main.Logic.Board;
 import main.Logic.GoGame;
 
 import java.util.Arrays;
-import java.util.List;
 
 public class GoController {
 
@@ -69,9 +66,8 @@ public class GoController {
         });
     }
 
-    private void updateBoard(int playerColorNumber, int tileIndex) {
+    private void updateControlBoard(int playerColorNumber, int tileIndex) {
         gameBoard.setBoardState(playerColorNumber, tileIndex);
-        gameBoard.addToHistory(gameBoard.getBoardState());
         updateGUI();
     }
 
@@ -93,33 +89,39 @@ public class GoController {
                 throw new RuntimeException("In updateGUI: Tile color does not exist.");
             }
         }
-        //for (tileToChange : tiles) {
-        //tileToChange[0], tileToChange[1], tileToChange[2]
-        //goGui.addStone(x, y, isWhite);
-        //}
     }
 
     /**Receives data about the board state sent by the server and updates the board.
+     * Enables a move by the user if it is the player's turn.
      * @param currentPlayerColorNumber The number corresponding to the player's tile color
      * @param move the move to be added to the board, containing the tile's color (int)
      *             and a tile index for the new tile.
      * @param newBoard used to check if the boardHistory addition matches the server's.
      */
-    void updateTurnFromServer(int currentPlayerColorNumber, String move, String newBoard) {
+    void updateTurnFromServer(int currentPlayerColorNumber, String move, String newBoard, String nGroups) {
         String[] moveDetails = move.split(";");
         int playerColorNumber  = Integer.valueOf(moveDetails[1]);
         int tileIndex = Integer.valueOf(moveDetails[0]);
-        updateBoard(playerColorNumber, tileIndex);
-
-        List<String> gameBoardHistory = gameBoard.getBoardHistory();
-        //TODO remove board history check, or make it more sensible
-        if (!gameBoardHistory.get(gameBoardHistory.size() - 1).equals(newBoard)) {
-            throw new RuntimeException("Added game history does not match server's board state.");
+        if (tileIndex != -1) {
+            updateControlBoard(playerColorNumber, tileIndex);
         }
-        System.out.println("Move made: " + Arrays.toString(moveDetails));
+
+        //TODO remove move made print
+        System.out.println("Move received: " + Arrays.toString(moveDetails));
+        if (gameBoard.getAllGroups().size() != Integer.parseInt(nGroups)) {
+            throw new RuntimeException("Number of groups does not match:\n" + "Server: " + nGroups + "\n" +
+                    "Client: " + gameBoard.getAllGroups().size());
+        }
+        System.out.println("N groups: " + gameBoard.getAllGroups().size());
+        if (!gameBoard.getBoardHistory().get(gameBoard.getBoardHistory().size() - 1).equals(newBoard)) {
+            throw new RuntimeException("Game board does not match received string after update:\n"
+            + newBoard + "\n" + gameBoard.getBoardHistory().get(gameBoard.getBoardHistory().size() - 1));
+        }
 
         isClientsTurn = currentPlayerColorNumber == thisPlayerColor.getPlayerColorNumber();
-        player.notifyTurn();
+        if (isClientsTurn) {
+            player.notifyTurn();
+        }
     }
 
     /**
@@ -137,7 +139,6 @@ public class GoController {
     private void setBoard(Integer boardSize) {
         this.gameBoard = new Board(boardSize);
         System.out.println("Boardsize set to: " + boardSize);
-        gameBoard.addToHistory(gameBoard.getBoardState());
     }
 
     private void setOpponent(String opponent) {

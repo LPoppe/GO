@@ -30,8 +30,7 @@ public class ValidityChecker {
         return "VALID";
     }
 
-    /**
-     * Makes a deep copy of the provided board, so that it can safely be
+    /**Makes a deep copy of the provided board, so that it can safely be
      * altered without changing the actual game board.
      * @param board the game board to be copied
      * @return a new Board object.

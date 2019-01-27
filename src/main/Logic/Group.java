@@ -3,21 +3,35 @@ package main.Logic;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class Group {
+public class Group implements Cloneable {
+
+    public Group myClone() {
+        return new Group(this.groupStatus, this.gameBoard, this.tileColor, this.freedomTiles, this.groupTiles);
+    }
 
     //A group is alive when it can no longer be removed from the board.
     // A group is dead when it can no longer be saved.
     private enum Status { unsettled, alive, dead }
     private Status groupStatus;
     private Board gameBoard;
-    private Board.Tiles tileColor;
+    private Board.TileColor tileColor;
 
-    private List<Integer> freedomTiles = new ArrayList<>();
-    private List<Integer> groupTiles = new ArrayList<>();
+    private Set<Integer> freedomTiles = new HashSet<>();
+    private Set<Integer> groupTiles = new HashSet<>();
 
-    public Group(Board.Tiles tile, int firstTileIndex, Board board) {
+    private Group(Status status, Board gameBoard, Board.TileColor tileColor, Set<Integer> freedomTiles, Set<Integer> groupTiles){
+        this.groupStatus = status;
+        this.gameBoard = gameBoard;
+        this.tileColor = tileColor;
+        this.freedomTiles = new HashSet<>(freedomTiles);
+        this.groupTiles = new HashSet<>(groupTiles);
+    }
+
+    public Group(Board.TileColor tile, int firstTileIndex, Board board) {
         groupTiles.add(firstTileIndex);
         this.groupStatus = Status.unsettled;
         this.gameBoard = board;
@@ -26,12 +40,10 @@ public class Group {
     }
 
     public void determineFreedoms() {
-        for (int tile : groupTiles) {
+        for (Integer tile : groupTiles) {
             for (Integer neighbor : getNeighborTiles(tile, gameBoard)) {
                 if (gameBoard.getTileContent(neighbor) == 0) {
-                    if (!freedomTiles.contains(neighbor)) {
-                        freedomTiles.add(neighbor);
-                    }
+                    freedomTiles.add(neighbor);
                 } else if (gameBoard.getTileContent(neighbor) != 0) {
                     freedomTiles.remove(neighbor);
                 }
@@ -44,49 +56,45 @@ public class Group {
      * @param board the board the tiles are on.
      * @return a list of the neighboring tile indices.
      */
-    //TODO add option to search at greater distance to determine a good move position.
     static List<Integer> getNeighborTiles(int tileIndex, Board board) {
         Pair<Integer, Integer> tileCoordinates = board.getTileCoordinates(tileIndex);
         List<Integer> tileNeighbors = new ArrayList<>();
         int xCoordinate = tileCoordinates.getKey();
         int yCoordinate = tileCoordinates.getValue();
 
-        for (int colNum = yCoordinate - 1; colNum <= (yCoordinate + 1); colNum += 1) {
-            for (int rowNum = xCoordinate - 1; rowNum <= (xCoordinate + 1); rowNum += 1) {
-                if (!((colNum == yCoordinate) && (rowNum == xCoordinate))) {
-                    //Check if coordinate is in board, and if it is directly connected.
-                    if (isWithinBoard(colNum, rowNum, board) &&
-                            (colNum == yCoordinate || rowNum == xCoordinate)) {
-                        Integer neighborTile = board.getTileIndex(rowNum, colNum);
-                        tileNeighbors.add(neighborTile);
-                    }
-                }
-            }
+        if (xCoordinate > 0) {
+            tileNeighbors.add(board.getTileIndex(xCoordinate - 1, yCoordinate));
         }
-        return tileNeighbors;
-    }
+        if (xCoordinate < board.getBoardSize() - 1) {
+            tileNeighbors.add(board.getTileIndex(xCoordinate + 1, yCoordinate));
+        }
+        if (yCoordinate > 0) {
+            tileNeighbors.add(board.getTileIndex(xCoordinate, yCoordinate - 1));
+        }
+        if (yCoordinate < board.getBoardSize() - 1) {
+            tileNeighbors.add(board.getTileIndex(xCoordinate, yCoordinate + 1));
+        }
 
-    private static boolean isWithinBoard(int row, int col, Board board) {
-        if (row < 0 || col < 0) {
-            return false;
-        } else {
-            return row < board.getBoardSize() && col < board.getBoardSize();
-        }
+        return tileNeighbors;
     }
 
     public int getGroupSize() {
         return groupTiles.size();
     }
 
-    public List<Integer> getTiles() {
+    Set<Integer> getGroupTiles() {
         return this.groupTiles;
     }
 
-    public int getNumberOfFreedoms() {
-        return freedomTiles.size();
+    Set<Integer> getFreedomTiles() {
+        return this.freedomTiles;
     }
 
-    public Board.Tiles getTileColor() {
+    public boolean groupHasNoFreedoms() {
+        return freedomTiles.isEmpty();
+    }
+
+    public Board.TileColor getTileColor() {
         return tileColor;
     }
 

@@ -3,7 +3,6 @@ package main.Logic;
 import javafx.util.Pair;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Board {
 
@@ -11,7 +10,7 @@ public class Board {
     private String boardState;
     //tiles on the current board
     private Integer[] currentBoard;
-    private ConcurrentHashMap<Integer, Group> tileGroups = new ConcurrentHashMap<>();
+    private HashSet<Group> tileGroupSet = new HashSet<>();
 
     //contains the index per location on the board
     private Integer[] boardFields;
@@ -28,18 +27,16 @@ public class Board {
         return boardHistory;
     }
 
-    public enum Tiles {
+    public enum TileColor {
         empty(0), black(1), white(2);
         private final int tileNumber;
-        Tiles(int i) {
+        TileColor(int i) {
             this.tileNumber = i;
         }
     }
 
     public Board(Integer preferredSize) {
         this.boardSize = preferredSize;
-        this.boardState = String.join("", Collections.nCopies(boardSize * boardSize, "0"));
-        System.out.println("The board state at init = " + boardState);
         initializeBoard();
     }
 
@@ -49,7 +46,11 @@ public class Board {
         this.currentBoard = board.currentBoard.clone();
         this.boardFields = board.getBoardFields().clone();
         this.boardHistory = new ArrayList<>(board.getBoardHistory());
-        this.tileGroups = new ConcurrentHashMap<>(board.getAllGroups());
+        this.tileGroupSet = new HashSet<>();
+
+        for (Group group : board.getAllGroups()) {
+            this.tileGroupSet.add(group.myClone());
+        }
     }
 
     public String getBoardState() {
@@ -66,8 +67,8 @@ public class Board {
     }
 
     //Getters for the group mappings.
-    public Map<Integer, Group> getAllGroups() {
-        return this.tileGroups;
+    public Set<Group> getAllGroups() {
+        return this.tileGroupSet;
     }
 
     /**Returns the x and y coordinate given a tile index.*/
@@ -95,7 +96,8 @@ public class Board {
         boardFields = new Integer[boardSize * boardSize];
         Arrays.setAll(boardFields, index -> index);
         currentBoard = new Integer[boardSize * boardSize];
-        Arrays.fill(currentBoard, Tiles.empty.tileNumber);
+        Arrays.fill(currentBoard, TileColor.empty.tileNumber);
+        updateBoardState();
     }
 
     /**Updates the board with a move.
@@ -103,7 +105,7 @@ public class Board {
      * @param playerMove the location of the new tile.
      */
     public void setBoardState(int playerColorNumber, int playerMove) {
-        if (playerColorNumber == Tiles.black.tileNumber || playerColorNumber == Tiles.white.tileNumber) {
+        if (playerColorNumber == TileColor.black.tileNumber || playerColorNumber == TileColor.white.tileNumber) {
             updateBoard(playerColorNumber, playerMove);
         } else {
             System.out.println("Player does not match known tile color.");
@@ -111,12 +113,12 @@ public class Board {
     }
 
     private void updateBoard(int tileColor, int tileIndex) {
-        if (tileColor == Tiles.black.tileNumber) {
+        if (tileColor == TileColor.black.tileNumber) {
             currentBoard[tileIndex] = tileColor;
-            addToGroup(Tiles.black, tileIndex);
+            addToGroup(TileColor.black, tileIndex);
         } else {
             currentBoard[tileIndex] = tileColor;
-            addToGroup(Tiles.white, tileIndex);
+            addToGroup(TileColor.white, tileIndex);
         }
         List<Integer> deadTiles = updateGroupFreedoms();
         for (Integer tile : deadTiles) {
@@ -133,40 +135,64 @@ public class Board {
             boardBuilder.append(tile);
         }
         this.boardState = boardBuilder.toString();
+        addToHistory(boardState);
     }
 
-    //TODO Mapping probably not necessary - easier to merge?
-    private void addToGroup(Tiles tile, int tileIndex) {
+    private void addToGroup(TileColor tile, int tileIndex) {
         List<Integer> tileNeighbors = Group.getNeighborTiles(tileIndex, this);
         int groupsFound = 0;
         for (Integer neighbor: tileNeighbors) {
-            if (tileGroups.keySet().contains(neighbor) && tile == tileGroups.get(neighbor).getTileColor()) {
-                tileGroups.put(tileIndex, tileGroups.get(neighbor));
-                tileGroups.get(neighbor).addTileToGroup(tileIndex);
-                groupsFound++;
+            for (Group group : tileGroupSet) {
+                if (group.getGroupTiles().contains(neighbor) && group.getTileColor() == tile) {
+                    groupsFound++;
+                    group.addTileToGroup(tileIndex);
+                }
             }
         }
+
         if (groupsFound == 0) {
-            tileGroups.put(tileIndex, new Group(tile, tileIndex, this));
+            tileGroupSet.add(new Group(tile, tileIndex, this));
         } else if (groupsFound > 1) {
-            mergeGroups(tileIndex);
+            mergeGroups(tile, tileIndex);
         }
     }
-    //TODO Tile can be in multiple groups -> how do I connect/merge groups?
-    private void mergeGroups(int tileIndex) {
 
+    /**Creates a new group containing the tiles of all groups containing a certain tile index.
+     * Removes the old groups from the board's set of groups.
+     * @param tile the tile color associated with the tile index.
+     * @param tileIndex the tile index being added.
+     */
+    private void mergeGroups(TileColor tile, Integer tileIndex) {
+        Group mergedGroup = new Group(tile, tileIndex, this);
+        List<Group> oldGroups = new ArrayList<>();
+        for (Group group : tileGroupSet) {
+            if (group.getGroupTiles().contains(tileIndex)) {
+                oldGroups.add(group);
+                mergedGroup.getGroupTiles().addAll(group.getGroupTiles());
+            }
+        }
+        tileGroupSet.removeAll(oldGroups);
+        mergedGroup.determineFreedoms();
+        tileGroupSet.add(mergedGroup);
     }
 
+    /**Determines the group freedoms of all groups on the board.
+     * If any group has 0 freedoms left, the tiles are added to a list of dead tiles.
+     * The dead groups are removed from the board's set of groups.
+     * @return a list of dead tiles.
+     */
     private List<Integer> updateGroupFreedoms() {
         List<Integer> deadTiles = new ArrayList<>();
-        for (Group group : tileGroups.values()) {
+        List<Group> deadGroups = new ArrayList<>();
+
+        for (Group group : tileGroupSet) {
             group.determineFreedoms();
-            if (group.getNumberOfFreedoms() == 0) {
-                deadTiles.addAll(group.getTiles());
-                //Removes all items containing the group.
-                tileGroups.values().removeAll(Collections.singleton(group));
+            if (group.groupHasNoFreedoms()) {
+                deadGroups.add(group);
+                deadTiles.addAll(group.getGroupTiles());
             }
         }
+        tileGroupSet.removeAll(deadGroups);
         return deadTiles;
     }
 

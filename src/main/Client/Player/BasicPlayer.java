@@ -5,6 +5,9 @@ import main.Logic.Board;
 import main.Logic.GoGame;
 import main.Logic.ValidityChecker;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BasicPlayer implements Player {
     private int allowedCalculationTime;
     private ValidityChecker checker;
@@ -21,17 +24,20 @@ public class BasicPlayer implements Player {
 
     @Override
     public void determineMove() {
-        //TODO -1 if passing.
-        int calculatedMove;
-        String moveValidity;
-        //Check validity
-        do {
-            calculatedMove = (int) Math.floor(Math.random() * gameBoard.getBoardSize());
-            moveValidity = checker.checkMove(myPlayerColor.getPlayerColorNumber(), calculatedMove, gameBoard);
-        } while (!moveValidity.equals("VALID"));
-        gameController.sendMoveToClient(calculatedMove);
-        //Further calculations
-        //Send move to server
+        List<Integer> validOptions = new ArrayList<>();
+        for (int option : gameBoard.getBoardFields()) {
+            String moveValidity = checker.checkMove(myPlayerColor.getPlayerColorNumber(), option, gameBoard);
+            if (moveValidity.equals("VALID")) {
+                validOptions.add(option);
+            }
+        }
+        //Send -1 for passing if no valid options are available.
+        if (validOptions.isEmpty()) {
+            gameController.sendMoveToClient(-1);
+        } else {
+            Integer calculatedMove = validOptions.get((int) Math.floor(Math.random() * validOptions.size()));
+            gameController.sendMoveToClient(calculatedMove);
+        }
     }
 
     @Override

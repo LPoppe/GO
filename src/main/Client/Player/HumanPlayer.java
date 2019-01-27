@@ -31,8 +31,8 @@ public class HumanPlayer implements Player {
         //If the move was valid, the player sends the move to the controller,
         // and no further input will be allowed until until isMyTurn is set to true again.
         if (moveValidity.equals("VALID")) {
-            gameController.sendMoveToClient(tileIndex);
             isMyTurn = false;
+            gameController.sendMoveToClient(tileIndex);
         } else {
             System.out.println(moveValidity);
         }

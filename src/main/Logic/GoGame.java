@@ -33,8 +33,6 @@ public class GoGame {
         this.goBoard = new Board(boardSize);
         setPlayerOneColor(player1, color);
         this.currentPlayerColor = PlayerColor.black;
-
-        this.goBoard.addToHistory(goBoard.getBoardState());
         this.turnTimer = 0;
     }
 
@@ -104,9 +102,10 @@ public class GoGame {
      * @return the new boardString to be sent to the players.
      */
     public void changeBoardState(ClientHandler messagingPlayer, int playerMove) {
-        if (getColorByClient(messagingPlayer) == currentPlayerColor) {
+        if (getColorByClient(messagingPlayer) == currentPlayerColor && playerMove != -1) {
             goBoard.setBoardState(getColorByClient(messagingPlayer).playerColorNumber, playerMove);
-            goBoard.addToHistory(goBoard.getBoardState());
+            changePlayer();
+        } else if (getColorByClient(messagingPlayer) == currentPlayerColor && playerMove == -1) {
             changePlayer();
         } else {
             System.out.println("Wrong player. This should not be reached.");

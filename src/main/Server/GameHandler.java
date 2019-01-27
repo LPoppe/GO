@@ -109,6 +109,10 @@ public class GameHandler {
                 ClientHandler winner = goGame.getClientByColor(GoGame.determineWinner(goGame.getBoard()));
                 broadcast("GAME_FINISHED+" + "+" + gameID + "+" + winner.getClientName() + "+" +
                         goGame.getPlayerScores() + "+" + "Both players passed turn.");
+            } else {
+                //changeBoardState only changes the player turn if called after passing.
+                goGame.changeBoardState(messagingPlayer, playerMove);
+                sendMoveAcknowledge(messagingPlayer, playerMove);
             }
         } else {
             String checkerMessage = checker.checkMove(goGame.getColorByClient(messagingPlayer).getPlayerColorNumber(),
@@ -120,16 +124,26 @@ public class GameHandler {
                 lastPlayerPassed = false;
                 //Update the board.
                 goGame.changeBoardState(messagingPlayer, playerMove);
-                //The game state includes the current status, the current player (to make next move),
-                //and the new board represented as a string.
-                String gameState = this.currentState + ";"
-                        + goGame.getCurrentPlayerColorNumber() + ";" + goGame.getBoardState();
-                //Move contains the move made and the player's color.
-                String move = playerMove + ";" + goGame.getColorByClient(messagingPlayer).getPlayerColorNumber();
-                broadcast("ACKNOWLEDGE_MOVE+" + gameID + "+" + move + "+" + gameState);
-                goGame.turnTimer++;
+                sendMoveAcknowledge(messagingPlayer, playerMove);
             }
         }
+    }
+
+    /**Builds the message to broadcast to the players after handling a move.
+     * @param messagingPlayer the player who sent the move.
+     * @param playerMove the tile index (or -1 if pass) of the move sent by the player.
+     */
+    private synchronized void sendMoveAcknowledge (ClientHandler messagingPlayer, int playerMove) {
+        //The game state includes the current status, the current player (to make next move),
+        //and the new board represented as a string.
+        String gameState = this.currentState + ";"
+                + goGame.getCurrentPlayerColorNumber() + ";" + goGame.getBoardState();
+        //Move contains the move made and the player's color.
+        String move = playerMove + ";" + goGame.getColorByClient(messagingPlayer).getPlayerColorNumber();
+        //TODO remove getallgroups
+        broadcast("ACKNOWLEDGE_MOVE+" + gameID + "+" + move + "+" + gameState + "+"
+                + goGame.getBoard().getAllGroups().size());
+        goGame.turnTimer++;
     }
 
     /**
