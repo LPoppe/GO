@@ -23,6 +23,7 @@ public class GoController {
     private boolean isClientsTurn;
     //Information about the player
     private Player player;
+    private Player hintAI;
     private String thisPlayerName;
     private GoGame.PlayerColor thisPlayerColor;
     private GoGame.PlayerColor opponentPlayerColor;
@@ -39,8 +40,11 @@ public class GoController {
      //* Initializes the correct player object (AI or human, depending on the user input).*/
     private void initPlayer(String choice) {
         if (choice.equals("H")) {
-            this.player = new HumanPlayer(this, this.gameBoard, thisPlayerColor);
+            this.hintAI = new BasicPlayer(this, this.gameBoard, thisPlayerColor);
+            this.player = new HumanPlayer(this, this.gameBoard, thisPlayerColor, hintAI);
+            //TODO: IMPLEMENT HINT AI FUNCTIONALITY
         } else if (choice.equals("A")) {
+            //TODO: PROVIDE THE AI WITH A MOVE TIME LIMITING ITS CALCULATIONS
             this.player = new BasicPlayer(this, this.gameBoard, thisPlayerColor);
         }
         if (isClientsTurn) {
@@ -52,18 +56,30 @@ public class GoController {
      * and configuring the game.
      */
     private void startGUI(int boardSize) {
-        this.goGui = new GoGuiIntegrator(true, true, boardSize);
-        goGui.startGUI();
-        goGui.setBoardSize(boardSize);
+        if (this.goGui == null) {
+            this.goGui = new GoGuiIntegrator(true, true, boardSize);
+            goGui.startGUI();
+            goGui.setBoardSize(boardSize);
 
-        goGui.getPrimaryStage().addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
-            int x = (int) (Math.round((mouseEvent.getSceneX() / goGui.getInitialSquareSize()) - 1));
-            int y = (int) (Math.round((mouseEvent.getSceneY() / goGui.getInitialSquareSize()) - 1));
-            System.out.println("X = " + mouseEvent.getSceneX() + ", Y = " + mouseEvent.getSceneY());
-            System.out.println("int X = " + x + ", int Y = " + y);
-//                goGui.addStone(x, y, true);
-            player.userTileClicked(x, y);
-        });
+            goGui.getPrimaryStage().addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
+                int x = (int) (Math.round((mouseEvent.getSceneX() / goGui.getInitialSquareSize()) - 1));
+                int y = (int) (Math.round((mouseEvent.getSceneY() / goGui.getInitialSquareSize()) - 1));
+                System.out.println("X = " + mouseEvent.getSceneX() + ", Y = " + mouseEvent.getSceneY());
+                System.out.println("int X = " + x + ", int Y = " + y);
+                if (gameBoard.getTileIndex(x, y) < (boardSize * boardSize)
+                        && gameBoard.getTileIndex(x, y) >= 0 && x >= 0 && y >= 0) {
+                    player.userTileClicked(x, y);
+                }
+            });
+
+            goGui.getPassButton().setOnAction(event -> player.userClickedPass());
+            goGui.getExitButton().setOnAction(event -> gameClient.sendExit());
+            if (hintAI != null) {
+                goGui.getHintButton().setOnAction(event -> hintAI.determineMove());
+            }
+        } else {
+            goGui.clearBoard();
+        }
     }
 
     private void updateControlBoard(int playerColorNumber, int tileIndex) {
@@ -98,7 +114,7 @@ public class GoController {
      *             and a tile index for the new tile.
      * @param newBoard used to check if the boardHistory addition matches the server's.
      */
-    void updateTurnFromServer(int currentPlayerColorNumber, String move, String newBoard, String nGroups) {
+    void updateTurnFromServer(int currentPlayerColorNumber, String move, String newBoard) {
         String[] moveDetails = move.split(";");
         int playerColorNumber  = Integer.valueOf(moveDetails[1]);
         int tileIndex = Integer.valueOf(moveDetails[0]);
@@ -108,11 +124,6 @@ public class GoController {
 
         //TODO remove move made print
         System.out.println("Move received: " + Arrays.toString(moveDetails));
-        if (gameBoard.getAllGroups().size() != Integer.parseInt(nGroups)) {
-            throw new RuntimeException("Number of groups does not match:\n" + "Server: " + nGroups + "\n" +
-                    "Client: " + gameBoard.getAllGroups().size());
-        }
-        System.out.println("N groups: " + gameBoard.getAllGroups().size());
         if (!gameBoard.getBoardHistory().get(gameBoard.getBoardHistory().size() - 1).equals(newBoard)) {
             throw new RuntimeException("Game board does not match received string after update:\n"
             + newBoard + "\n" + gameBoard.getBoardHistory().get(gameBoard.getBoardHistory().size() - 1));
@@ -167,6 +178,36 @@ public class GoController {
     }
 
     void retryMove() {
-        player.notifyTurn();
+        //player.notifyTurn();
+    }
+
+    public void endGame(String[] splitMessage) {
+        String winner = splitMessage[2];
+        String[] scores = splitMessage[3].split(";");
+        String blackScore = scores[0];
+        String whiteScore = scores[1];
+        if ((Double.valueOf(blackScore) > Double.valueOf(whiteScore)
+                && thisPlayerColor == GoGame.PlayerColor.black) ||
+                (Double.valueOf(whiteScore) > Double.valueOf(blackScore)
+                        && thisPlayerColor == GoGame.PlayerColor.white)) {
+            System.out.println("Congratulations, you won!\n" +
+                    splitMessage[4] + "\n" +
+                    "Black scored: " + blackScore + "\n" +
+                    "White scored: " + whiteScore + "\n");
+        } else {
+            System.out.println("Too bad, you lost!\n" +
+                    splitMessage[4] + "\n" +
+                    "Black scored: " + blackScore + "\n" +
+                    "White scored: " + whiteScore + "\n");
+        }
+    }
+
+    public Player getPlayer() {
+        return this.player;
+    }
+
+    public void displayHint(Integer calculatedMove) {
+        Pair<Integer, Integer> moveCoordinates = gameBoard.getTileCoordinates(calculatedMove);
+        goGui.addHintIndicator(moveCoordinates.getKey(), moveCoordinates.getValue());
     }
 }

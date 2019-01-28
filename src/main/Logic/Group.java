@@ -7,11 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class Group implements Cloneable {
-
-    public Group myClone() {
-        return new Group(this.groupStatus, this.gameBoard, this.tileColor, this.freedomTiles, this.groupTiles);
-    }
+public class Group {
 
     //A group is alive when it can no longer be removed from the board.
     // A group is dead when it can no longer be saved.
@@ -23,13 +19,11 @@ public class Group implements Cloneable {
     private Set<Integer> freedomTiles = new HashSet<>();
     private Set<Integer> groupTiles = new HashSet<>();
 
-    private Group(Status status, Board gameBoard, Board.TileColor tileColor, Set<Integer> freedomTiles, Set<Integer> groupTiles){
-        this.groupStatus = status;
-        this.gameBoard = gameBoard;
-        this.tileColor = tileColor;
-        this.freedomTiles = new HashSet<>(freedomTiles);
-        this.groupTiles = new HashSet<>(groupTiles);
-    }
+    /**The constructor used in the normal flow of the game.
+     * @param tile the tile color of the group of stones.
+     * @param firstTileIndex the first tile the group is based around.
+     * @param board the board the group is on.
+     */
 
     public Group(Board.TileColor tile, int firstTileIndex, Board board) {
         groupTiles.add(firstTileIndex);
@@ -39,6 +33,27 @@ public class Group implements Cloneable {
         determineFreedoms();
     }
 
+    /**Used to enable deep copying the board.
+     */
+    private Group(Status status, Board gameBoard, Board.TileColor tileColor,
+                  Set<Integer> freedomTiles, Set<Integer> groupTiles) {
+        this.groupStatus = status;
+        this.gameBoard = gameBoard;
+        this.tileColor = tileColor;
+        this.freedomTiles = new HashSet<>(freedomTiles);
+        this.groupTiles = new HashSet<>(groupTiles);
+    }
+
+    /**Creates a clone of this group.
+     * @return a clone of this group.
+     */
+    public Group myClone() {
+        return new Group(this.groupStatus, this.gameBoard, this.tileColor, this.freedomTiles, this.groupTiles);
+    }
+
+    /**Calculates the amount of empty tiles surrounding the group.
+     * If this reaches 0, the group has been captured and will be removed from the board.
+     */
     public void determineFreedoms() {
         for (Integer tile : groupTiles) {
             for (Integer neighbor : getNeighborTiles(tile, gameBoard)) {
@@ -56,7 +71,7 @@ public class Group implements Cloneable {
      * @param board the board the tiles are on.
      * @return a list of the neighboring tile indices.
      */
-    static List<Integer> getNeighborTiles(int tileIndex, Board board) {
+    public static List<Integer> getNeighborTiles(int tileIndex, Board board) {
         Pair<Integer, Integer> tileCoordinates = board.getTileCoordinates(tileIndex);
         List<Integer> tileNeighbors = new ArrayList<>();
         int xCoordinate = tileCoordinates.getKey();

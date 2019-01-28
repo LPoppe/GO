@@ -1,5 +1,7 @@
 package main.Logic;
 
+import javafx.util.Pair;
+import main.Client.Player.Player;
 import main.Server.ClientHandler;
 
 import java.util.*;
@@ -114,30 +116,61 @@ public class GoGame {
 
     /**
      * Calculates a player's score based on a certain board.
+     * Static to allow an AI to use it outside of the flow of the actual game.
+     * Should not be called before the game is over.
      * @param board the board to be used.
-     * @param playerColor the color of the player being scored.
-     * @return the player's score
+     * @return a pair containing the scores of the black and white players
      */
     //TODO Calculate scores not implemented yet. Don't forget Group.getNeighbors!
-    public static double calculateScore(Board board, PlayerColor playerColor) {
-        return 0.0;
+    private static Pair<Double, Double> calculateScores(Board board) {
+        //Add the empty tiles to the groups of the game board.
+        board.determineEmptyGroups();
+        Pair<Double, Double> playerScores;
+        Double blackScore = 0.0;
+        Double whiteScore = 0.0;
+        for (Group group : board.getAllGroups()) {
+            if (group.getTileColor().getTileColorNumber() == PlayerColor.black.getPlayerColorNumber()) {
+                blackScore = blackScore + group.getGroupTiles().size();
+            }
+            if (group.getTileColor().getTileColorNumber() == PlayerColor.white.getPlayerColorNumber()) {
+                whiteScore = whiteScore + group.getGroupTiles().size();
+            }
+            if (group.getTileColor() == Board.TileColor.empty) {
+                boolean whiteFound = false;
+                boolean blackFound = false;
+                for (int tile : group.getGroupTiles()) {
+                    List<Integer> neighbors = Group.getNeighborTiles(tile, board);
+                    for (Integer neighbor : neighbors) {
+                        if (board.getTileContent(neighbor) == Board.TileColor.black.getTileColorNumber()) {
+                            blackFound = true;
+                        } else if (board.getTileContent(neighbor) == Board.TileColor.white.getTileColorNumber()) {
+                            whiteFound = true;
+                        }
+                    }
+                }
+                if (blackFound && !whiteFound) {
+                    System.out.println("Empty tile size: " + group.getGroupTiles().size());
+                    blackScore = blackScore + group.getGroupTiles().size();
+                } else if (whiteFound && !blackFound) {
+                    System.out.println("Empty tile size: " + group.getGroupTiles().size());
+                    whiteScore = whiteScore + group.getGroupTiles().size();
+                }
+            }
+        }
+        whiteScore = whiteScore + 0.5;
+        playerScores = new Pair<>(blackScore, whiteScore);
+        return playerScores;
     }
 
-    public String getPlayerScores() {
-        double scoreBlack = calculateScore(this.goBoard, PlayerColor.black);
-        double scoreWhite = calculateScore(this.goBoard, PlayerColor.white);
-        return scoreBlack + ";" + scoreWhite;
-    }
-
-    /**Called when both players have passed after one another.
+    /**Called when the game is over.
+     * (e.g. disconnect, or both players have passed after one another).
      */
-    public static PlayerColor determineWinner(Board board) {
-        double scoreBlack = calculateScore(board, PlayerColor.black);
-        double scoreWhite = calculateScore(board, PlayerColor.white);
-        if (scoreBlack >= scoreWhite) {
-            return PlayerColor.black;
+    public static Pair<PlayerColor, Pair<Double, Double>> determineWinner(Board board) {
+        Pair<Double, Double> scores = calculateScores(board);
+        if (scores.getKey().compareTo(scores.getValue()) > 0) {
+            return new Pair<>(PlayerColor.black, scores);
         } else {
-            return PlayerColor.white;
+            return new Pair<>(PlayerColor.white, scores);
         }
     }
 }

@@ -14,8 +14,10 @@ public class BasicPlayer implements Player {
     private GoController gameController;
     private Board gameBoard;
     private GoGame.PlayerColor myPlayerColor;
+    //move time in seconds?
+    private int moveTime;
 
-    public BasicPlayer (GoController controller, Board board, GoGame.PlayerColor thisPlayerColor) {
+    public BasicPlayer(GoController controller, Board board, GoGame.PlayerColor thisPlayerColor) {
         this.checker = new ValidityChecker();
         this.gameController = controller;
         this.gameBoard = board;
@@ -31,12 +33,22 @@ public class BasicPlayer implements Player {
                 validOptions.add(option);
             }
         }
-        //Send -1 for passing if no valid options are available.
-        if (validOptions.isEmpty()) {
-            gameController.sendMoveToClient(-1);
+        if (this == gameController.getPlayer()) {
+            if (validOptions.isEmpty()) {
+                //Send -1 for passing if no valid options are available.
+                gameController.sendMoveToClient(-1);
+            } else {
+                Integer calculatedMove = validOptions.get((int) Math.floor(Math.random() * validOptions.size()));
+                gameController.sendMoveToClient(calculatedMove);
+            }
         } else {
-            Integer calculatedMove = validOptions.get((int) Math.floor(Math.random() * validOptions.size()));
-            gameController.sendMoveToClient(calculatedMove);
+            if (validOptions.isEmpty()) {
+                //Send -1 for passing if no valid options are available.
+                System.out.println("No more valid moves found.");
+            } else {
+                Integer calculatedMove = validOptions.get((int) Math.floor(Math.random() * validOptions.size()));
+                gameController.displayHint(calculatedMove);
+            }
         }
     }
 

@@ -199,10 +199,11 @@ public class ClientHandler extends Thread {
         }
     }
 
-    /**Processes the response to the REQUEST_REMATCH message.
+    /**Processes the response to the REQUEST_REMATCH message. Sends answer to gameHandler.
      * @param splitMessage SET_REMATCH + '1' if rematch '0' if not.
      */
     private void processRematch(String[] splitMessage) {
+        gameHandler.playerRematch(this, splitMessage[1]);
     }
     /**Creates clean disconnect between clients and server after receiving exit message.
      * Shuts down anyway when the client does not provide the correct string,

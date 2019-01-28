@@ -59,8 +59,7 @@ public class GoClient extends Thread {
         sendHandshake(readStringWithDefault("Please enter your name <Linda>: ", "Linda"));
         String serverMessage;
         try {
-            while (true) {
-                serverMessage = in.readLine();
+            while ((serverMessage = in.readLine()) != null) {
                 processServerMessage(serverMessage);
             }
         } catch (IOException ioe) {
@@ -119,6 +118,9 @@ public class GoClient extends Thread {
             case "GAME_FINISHED":
                 processGameEnd(splitMessage);
                 break;
+            case "REQUEST_REMATCH":
+                processRematch();
+                break;
             default:
                 printToGame("Command not recognised.");
         }
@@ -174,8 +176,7 @@ public class GoClient extends Thread {
      * @param splitMessage contains ACKNOWLEDGE_MOVE, GAME_ID, MOVE, GAME_STATE
      */
     private void processMoveAcknowledgement(String[] splitMessage) {
-        //TODO change back to 4
-        if (splitMessage.length != 5) {
+        if (splitMessage.length != 4) {
             printToGame("Move acknowledgement did not match expected length.");
         } else {
             //gameState should look like: STATUS;CURRENT_PLAYER;BOARD
@@ -189,14 +190,14 @@ public class GoClient extends Thread {
                 String move = splitMessage[2];
                 int currentPlayerColor = Integer.valueOf(splitGameState[1]);
                 String newBoard = splitGameState[2];
-                System.out.println("N groups at server: " + splitMessage[4]);
-                controller.updateTurnFromServer(currentPlayerColor, move, newBoard, splitMessage[4]);
+                controller.updateTurnFromServer(currentPlayerColor, move, newBoard);
             }
         }
     }
 
     private void processInvalidMoveSent(String[] splitMessage) {
         printToGame("Move was invalid. Try again.");
+        printToGame(splitMessage[1]);
         controller.retryMove();
     }
 
@@ -204,8 +205,26 @@ public class GoClient extends Thread {
 
     }
 
+    /**
+     *
+     * @param splitMessage contains GAME_FINISHED+$GAME_ID+$WINNER+$SCORE (black;white) +$MESSAGE
+     */
     private void processGameEnd(String[] splitMessage) {
         this.gameState = GameHandler.GameHandlerState.FINISHED;
+        controller.endGame(splitMessage);
+    }
+
+    /**Sends a message to server indicating whether the player wants a rematch (1) or not (0).*/
+    private void processRematch() {
+        String rematchChoice;
+        do {
+            rematchChoice = GoClient.readString("Would you like a rematch? (yes or no)").toUpperCase();
+        } while (!(rematchChoice.equals("YES") || rematchChoice.equals("NO")));
+        if (rematchChoice.equals("YES")) {
+            writeToStream("SET_REMATCH+1");
+        } else {
+            writeToStream("SET_REMATCH+0");
+        }
     }
 
     private void sendHandshake(String input) {
@@ -221,12 +240,11 @@ public class GoClient extends Thread {
      * retrieving this move and calling this method.
      * @param tileIndex the tile on which the player places their move. -1 if passing.
      */
-    //TODO sendMove happens out of turn regularly
     void sendMove(int tileIndex) {
         writeToStream("MOVE+" + this.gameID + "+" + this.clientName + "+" + tileIndex);
     }
 
-    private void sendExit() {
+    void sendExit() {
         writeToStream("EXIT+" + this.gameID + "+" + this.clientName);
         closeClient();
     }

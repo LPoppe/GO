@@ -1,5 +1,6 @@
 package main.Server;
 
+import javafx.util.Pair;
 import main.Logic.GoGame;
 import main.Logic.ValidityChecker;
 
@@ -8,10 +9,14 @@ import main.Logic.ValidityChecker;
 public class GameHandler {
     private ClientHandler player1;
     private ClientHandler player2;
+    private boolean player1WantsRematch;
+    private boolean player2WantsRematch;
     private GoGame goGame;
     private GoServer server;
     private Integer gameID;
     private boolean disconnectAttempted = false;
+
+
     public enum GameHandlerState { INIT, PLAYING, FINISHED }
     private GameHandlerState currentState;
     private ValidityChecker checker;
@@ -89,6 +94,19 @@ public class GameHandler {
         setNextState();
     }
 
+    public void playerRematch(ClientHandler player, String s) {
+        if (s.equals("1")) {
+            if (player == player1) {
+                player1WantsRematch = true;
+            } else if (player == player2) {
+                player2WantsRematch = true;
+            }
+            if (player1WantsRematch && player2WantsRematch) {
+                resetGame();
+            }
+        }
+    }
+
     /**Sends a message to both players in the game. Doing so also prints it to the server.
      * @param message The message to be broadcast.
      */
@@ -106,10 +124,15 @@ public class GameHandler {
         //First check if both players have passed:
         if (playerMove == -1) {
             if (lastPlayerPassed) {
-                ClientHandler winner = goGame.getClientByColor(GoGame.determineWinner(goGame.getBoard()));
-                broadcast("GAME_FINISHED+" + "+" + gameID + "+" + winner.getClientName() + "+" +
-                        goGame.getPlayerScores() + "+" + "Both players passed turn.");
+                Pair<GoGame.PlayerColor, Pair<Double, Double>> determinedWinner = GoGame.determineWinner(goGame.getBoard());
+                ClientHandler winner = goGame.getClientByColor(determinedWinner.getKey());
+                Pair<Double, Double> scores = determinedWinner.getValue();
+                broadcast("GAME_FINISHED+" + gameID + "+" + winner.getClientName() + "+" +
+                        scores.getKey() + ";" + scores.getValue() + "+" + "Both players passed turn.");
+                //Asks if the clients want another game against each other.
+                broadcast("REQUEST_REMATCH");
             } else {
+                lastPlayerPassed = true;
                 //changeBoardState only changes the player turn if called after passing.
                 goGame.changeBoardState(messagingPlayer, playerMove);
                 sendMoveAcknowledge(messagingPlayer, playerMove);
@@ -140,9 +163,7 @@ public class GameHandler {
                 + goGame.getCurrentPlayerColorNumber() + ";" + goGame.getBoardState();
         //Move contains the move made and the player's color.
         String move = playerMove + ";" + goGame.getColorByClient(messagingPlayer).getPlayerColorNumber();
-        //TODO remove getallgroups
-        broadcast("ACKNOWLEDGE_MOVE+" + gameID + "+" + move + "+" + gameState + "+"
-                + goGame.getBoard().getAllGroups().size());
+        broadcast("ACKNOWLEDGE_MOVE+" + gameID + "+" + move + "+" + gameState);
         goGame.turnTimer++;
     }
 
@@ -150,19 +171,20 @@ public class GameHandler {
      * * Handles the disconnect of one of the clients.
      */
     void clientLeft(ClientHandler client) {
-        //TODO nullpointerexception if client 2 does not exist yet.
         if (!disconnectAttempted) {
             this.currentState = GameHandlerState.FINISHED;
+            Pair<GoGame.PlayerColor, Pair<Double, Double>> determinedWinner = GoGame.determineWinner(goGame.getBoard());
+            Pair<Double, Double> scores = determinedWinner.getValue();
             //Notify other client. UPDATE_STATUS+FINISHED
-            if (client == player2) {
+            if (client == player2 && player1 != null) {
                 player1.sendLine("UPDATE_STATUS+" + this.currentState);
-                player1.sendLine("GAME_FINISHED+" + gameID + player1.getClientName() +
-                        goGame.getPlayerScores() + "Other player disconnected.");
+                player1.sendLine("GAME_FINISHED+" + gameID + "+" + player1.getClientName() + "+" +
+                        scores.getKey() + ";" + scores.getValue() + "+" + "Other player disconnected.");
 
-            } else if (client == player1) {
+            } else if (client == player1 && player2 != null) {
                 player2.sendLine("UPDATE_STATUS+" + this.currentState);
-                player2.sendLine("GAME_FINISHED+" + gameID + player2.getClientName() +
-                        goGame.getPlayerScores() + "Other player disconnected.");
+                player2.sendLine("GAME_FINISHED+" + gameID + "+" + player2.getClientName() + "+" +
+                        scores.getKey() + ";" + scores.getValue() + "+" + "Other player disconnected.");
             }
             //Remove players and game from the main server.
             server.removeHandler(player1);
@@ -170,6 +192,11 @@ public class GameHandler {
             server.removeGame(this);
             disconnectAttempted = true;
         }
+    }
+
+    /**Resets the game*/
+    private void resetGame() {
+        setConfig(player1, goGame.getColorByClient(player1), goGame.getBoardSize());
     }
 
     /**Returns the game's ID.*/

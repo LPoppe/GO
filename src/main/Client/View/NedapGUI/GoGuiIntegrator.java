@@ -1,6 +1,7 @@
 package main.Client.View.NedapGUI;
 
 import javafx.application.Platform;
+import javafx.scene.control.Button;
 import javafx.stage.Stage;
 
 public class GoGuiIntegrator implements GoGui {
@@ -96,7 +97,6 @@ public class GoGuiIntegrator implements GoGui {
 
 	@Override
 	public synchronized void stopGUI() {
-		// Not implemented yet
 	}
 
 	private void createWrappedObject() {
@@ -122,6 +122,18 @@ public class GoGuiIntegrator implements GoGui {
 
 	public Stage getPrimaryStage() {
 		return this.wrappee.getPrimaryStage();
+	}
+
+	public Button getPassButton() {
+		return this.wrappee.getPassButton();
+	}
+
+	public Button getExitButton() {
+		return this.wrappee.getExitButton();
+	}
+
+	public Button getHintButton() {
+		return this.wrappee.getHintButton();
 	}
 
 	public double getInitialSquareSize() {

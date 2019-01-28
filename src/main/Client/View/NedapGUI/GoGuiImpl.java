@@ -4,12 +4,14 @@ import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.*;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
@@ -24,7 +26,9 @@ public class GoGuiImpl extends Application {
 
 	private int currentBoardSize = INITIAL_BOARD_SIZE;
 	private int currentSquareSize = INITIAL_SQUARE_SIZE;
-
+	private Button passButton;
+	private Button exitButton;
+	private Button hintButton;
 	private Node[][] board = null;
 	private List<Line> boardLines = new ArrayList<>();
 	private Group root = null;
@@ -142,6 +146,7 @@ public class GoGuiImpl extends Application {
 		root = new Group();
 		board = new Node[currentBoardSize][currentBoardSize];
 
+		initButtons();
 		Scene scene = new Scene(root, (currentBoardSize + 1) * currentSquareSize,
 				(currentBoardSize + 1) * currentSquareSize);
 		primaryStage.setScene(scene);
@@ -153,6 +158,36 @@ public class GoGuiImpl extends Application {
 		initBoardLines();
 	}
 
+	public Button getPassButton() {
+		return this.passButton;
+	}
+
+	public Button getExitButton() {
+	    return this.exitButton;
+    }
+
+    public Button getHintButton() {
+	    return this.hintButton;
+    }
+
+    private void initButtons() {
+
+        this.exitButton = new Button("Exit game");
+        exitButton.setLayoutX(0);
+        exitButton.setLayoutY(0);
+        root.getChildren().add(exitButton);
+
+        this.passButton = new Button("Pass");
+        passButton.setLayoutX(currentSquareSize * 2);
+        passButton.setLayoutY(0);
+        root.getChildren().add(passButton);
+
+        this.hintButton = new Button("Get a hint");
+        hintButton.setLayoutX(currentSquareSize * 3);
+        hintButton.setLayoutY(0);
+        root.getChildren().add(hintButton);
+
+    }
 	private void initBoardLines() {
 		root.getChildren().removeAll(boardLines);
 		boardLines.clear();

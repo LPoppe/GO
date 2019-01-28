@@ -29,9 +29,12 @@ public class Board {
 
     public enum TileColor {
         empty(0), black(1), white(2);
-        private final int tileNumber;
+        private final int tileColorNumber;
         TileColor(int i) {
-            this.tileNumber = i;
+            this.tileColorNumber = i;
+        }
+        public int getTileColorNumber() {
+            return tileColorNumber;
         }
     }
 
@@ -40,6 +43,10 @@ public class Board {
         initializeBoard();
     }
 
+    /**Used to deep copy a board. Used to check if a move breaks the super Ko rule in the game flow.
+     * Can also be used by the AI to calculate ahead.
+     * @param board the board to be copied
+     */
     Board(Board board) {
         this.boardSize = board.getBoardSize();
         this.boardState = board.getBoardState();
@@ -90,45 +97,47 @@ public class Board {
         return this.currentBoard[tileIndex];
     }
 
-    /**Creates an array of indexes for all tile location and an initial empty board.
-     */
+    /**Creates an array of indexes for all tile location and an initial empty board.*/
     private void initializeBoard() {
         boardFields = new Integer[boardSize * boardSize];
         Arrays.setAll(boardFields, index -> index);
         currentBoard = new Integer[boardSize * boardSize];
-        Arrays.fill(currentBoard, TileColor.empty.tileNumber);
+        Arrays.fill(currentBoard, TileColor.empty.tileColorNumber);
         updateBoardState();
     }
 
-    /**Updates the board with a move.
+    /**Calls updateBoard, and checks if a player ID is valid.
      * @param playerColorNumber the tile color to be added. Requires the playerColor to be 1 or 2.
      * @param playerMove the location of the new tile.
      */
     public void setBoardState(int playerColorNumber, int playerMove) {
-        if (playerColorNumber == TileColor.black.tileNumber || playerColorNumber == TileColor.white.tileNumber) {
+        if (playerColorNumber == TileColor.black.tileColorNumber || playerColorNumber == TileColor.white.tileColorNumber) {
             updateBoard(playerColorNumber, playerMove);
         } else {
             System.out.println("Player does not match known tile color.");
         }
     }
 
+    /**Updates the current board.
+     * @param tileColor the tile color of the tile to be placed.
+     * @param tileIndex the location of the new tile.
+     */
     private void updateBoard(int tileColor, int tileIndex) {
-        if (tileColor == TileColor.black.tileNumber) {
+        if (tileColor == TileColor.black.tileColorNumber) {
             currentBoard[tileIndex] = tileColor;
             addToGroup(TileColor.black, tileIndex);
+            updateGroupFreedoms(TileColor.white);
+            updateGroupFreedoms(TileColor.black);
         } else {
             currentBoard[tileIndex] = tileColor;
             addToGroup(TileColor.white, tileIndex);
-        }
-        List<Integer> deadTiles = updateGroupFreedoms();
-        for (Integer tile : deadTiles) {
-            currentBoard[tile] = 0;
+            updateGroupFreedoms(TileColor.black);
+            updateGroupFreedoms(TileColor.white);
         }
         updateBoardState();
     }
 
-    /**Updates the String boardState by replacing it with a new string built from currentBoard.
-     */
+    /**Updates the String boardState by replacing it with a new string built from currentBoard.*/
     private void updateBoardState() {
         StringBuilder boardBuilder = new StringBuilder();
         for (int tile : currentBoard) {
@@ -138,6 +147,11 @@ public class Board {
         addToHistory(boardState);
     }
 
+    /**Adds the tile to be placed to a group if it already exists, or creates a new group if not.
+     * If the tile connects groups, these are merged into a new group using mergeGroups().
+     * @param tile the tile to be added.
+     * @param tileIndex the location of the new tile.
+     */
     private void addToGroup(TileColor tile, int tileIndex) {
         List<Integer> tileNeighbors = Group.getNeighborTiles(tileIndex, this);
         int groupsFound = 0;
@@ -179,21 +193,35 @@ public class Board {
     /**Determines the group freedoms of all groups on the board.
      * If any group has 0 freedoms left, the tiles are added to a list of dead tiles.
      * The dead groups are removed from the board's set of groups.
+     * @param tileColor the tile color of the groups to be checked.
      * @return a list of dead tiles.
      */
-    private List<Integer> updateGroupFreedoms() {
+    private void updateGroupFreedoms(TileColor tileColor) {
         List<Integer> deadTiles = new ArrayList<>();
         List<Group> deadGroups = new ArrayList<>();
-
         for (Group group : tileGroupSet) {
-            group.determineFreedoms();
-            if (group.groupHasNoFreedoms()) {
-                deadGroups.add(group);
-                deadTiles.addAll(group.getGroupTiles());
+            if (group.getTileColor() == tileColor) {
+                group.determineFreedoms();
+                if (group.groupHasNoFreedoms()) {
+                    deadGroups.add(group);
+                    deadTiles.addAll(group.getGroupTiles());
+                }
             }
         }
         tileGroupSet.removeAll(deadGroups);
-        return deadTiles;
+        for (Integer tile : deadTiles) {
+            currentBoard[tile] = 0;
+        }
+    }
+
+    /**Calculates the empty groups. Called outside the board for determining the scores.
+     */
+    public void determineEmptyGroups() {
+        for (Integer field : getBoardFields()) {
+            if (getTileContent(field) == 0) {
+                addToGroup(TileColor.empty, field);
+            }
+        }
     }
 
     /**Draws a string representation of the current board state, which may be used in the TUI.
