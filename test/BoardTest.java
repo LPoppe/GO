@@ -58,7 +58,6 @@ public class BoardTest {
         board9.setBoardState(2, 29);
 
         assertEquals(3, board9.getAllGroups().size());
-
         board9.setBoardState(2, 10);
         assertEquals(3, board9.getAllGroups().size());
         for (Group group : board9.getAllGroups()) {

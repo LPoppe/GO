@@ -3,8 +3,11 @@ import main.Server.GoServer;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Scanner;
 
 /**Intended to be used to test the communication system between server and clients.*/
 public class ServerTest {
@@ -17,14 +20,20 @@ public class ServerTest {
     @Before
     public void setUp(){
         server = new GoServer();
+        client1 = new GoController();
+        client2 = new GoController();
+        client3 = new GoController();
+        client4 = new GoController();
+
+
+        String data = "\n\n\n\n\nA";
+        InputStream stdin = System.in;
         try {
-            InetAddress host = InetAddress.getLocalHost();
-            client1 = new GoController();
-            client2 = new GoController();
-            client3 = new GoController();
-            client4 = new GoController();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
+            System.setIn(new ByteArrayInputStream(data.getBytes()));
+            Scanner scanner = new Scanner(System.in);
+            System.out.println(scanner.nextLine());
+        } finally {
+            System.setIn(stdin);
         }
     }
 
