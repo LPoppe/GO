@@ -4,7 +4,6 @@ import main.Logic.GoGame;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.Arrays;
 
 public class ClientHandler extends Thread {
     private String clientName;

@@ -21,6 +21,7 @@ public class ValidityChecker {
         }
         Board boardCopy = deepCopyBoard(board);
         boardCopy.setBoardState(playerColorNumber, playerMove);
+
         //tile does not recreate previous board state.
         if (!doesNotBreakKoRule(boardCopy.getBoardState(), board)) {
             return "Move breaks Ko rule.";
@@ -35,21 +36,21 @@ public class ValidityChecker {
      * @param board the game board to be copied
      * @return a new Board object.
      */
-    private Board deepCopyBoard(Board board) {
+    public Board deepCopyBoard(Board board) {
         return new Board(board);
     }
 
-    private boolean isValidCoordinate(int playerMove, Board board) {
-        return board.getBoardFields().length > playerMove;
+    public boolean isValidCoordinate(int playerMove, Board board) {
+        return board.getBoardFields().length > playerMove && playerMove >= 0;
     }
 
-    private boolean isTileEmpty(int playerMove, Board board) {
+    public boolean isTileEmpty(int playerMove, Board board) {
         return board.getTileContent(playerMove) == 0;
     }
 
     /**Uses last turn's board to check if a previous board state is recreated by a move.
      */
-    private boolean doesNotBreakKoRule(String newBoardState, Board board) {
+    public boolean doesNotBreakKoRule(String newBoardState, Board board) {
         return !board.getBoardHistory().contains(newBoardState);
     }
 }

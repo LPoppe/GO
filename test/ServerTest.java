@@ -1,11 +1,12 @@
-import main.Client.GoClient;
 import main.Client.GoController;
 import main.Server.GoServer;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+/**Intended to be used to test the communication system between server and clients.*/
 public class ServerTest {
     private GoServer server;
     private GoController client1;
@@ -13,14 +14,15 @@ public class ServerTest {
     private GoController client3;
     private GoController client4;
 
+    @Before
     public void setUp(){
         server = new GoServer();
         try {
             InetAddress host = InetAddress.getLocalHost();
-            client1 = new GoController(host, 7171);
-            client2 = new GoController(host, 7171);
-            client3 = new GoController(host, 7171);
-            client4 = new GoController(host, 7171);
+            client1 = new GoController();
+            client2 = new GoController();
+            client3 = new GoController();
+            client4 = new GoController();
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }

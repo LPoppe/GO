@@ -56,7 +56,7 @@ public class Board {
         this.tileGroupSet = new HashSet<>();
 
         for (Group group : board.getAllGroups()) {
-            this.tileGroupSet.add(group.myClone());
+            this.tileGroupSet.add(group.myClone(this));
         }
     }
 

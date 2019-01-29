@@ -42,9 +42,7 @@ public class GoController {
         if (choice.equals("H")) {
             this.hintAI = new BasicPlayer(this, this.gameBoard, thisPlayerColor);
             this.player = new HumanPlayer(this, this.gameBoard, thisPlayerColor, hintAI);
-            //TODO: IMPLEMENT HINT AI FUNCTIONALITY
         } else if (choice.equals("A")) {
-            //TODO: PROVIDE THE AI WITH A MOVE TIME LIMITING ITS CALCULATIONS
             this.player = new BasicPlayer(this, this.gameBoard, thisPlayerColor);
         }
         if (isClientsTurn) {
@@ -72,13 +70,14 @@ public class GoController {
                 }
             });
 
-            goGui.getPassButton().setOnAction(event -> player.userClickedPass());
-            goGui.getExitButton().setOnAction(event -> gameClient.sendExit());
-            if (hintAI != null) {
-                goGui.getHintButton().setOnAction(event -> hintAI.determineMove());
-            }
         } else {
             goGui.clearBoard();
+        }
+
+        goGui.getPassButton().setOnAction(event -> player.userClickedPass());
+        goGui.getExitButton().setOnAction(event -> gameClient.sendExit());
+        if (hintAI != null) {
+            goGui.getHintButton().setOnAction(event -> hintAI.determineMove());
         }
     }
 
@@ -135,8 +134,7 @@ public class GoController {
         }
     }
 
-    /**
-     * Initialises a game board.
+    /**Initialises a game board.
      * @param boardSize the size of the board.
      */
     void setGame(Integer boardSize, String opponent, int colorNumber) {

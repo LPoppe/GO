@@ -72,7 +72,6 @@ public class GoServer {
     /**Asks the user for the port to be used. Sets the server's port number if available.
      * Port number cannot be a system port.
      */
-    //TODO setPort can get stuck in an infinite loop, but I'm not sure what caused it.
     private void setPort() {
         printOnServer("Please provide a port number above 1023: ");
         Scanner readPort = new Scanner(System.in);

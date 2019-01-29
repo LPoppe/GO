@@ -19,6 +19,13 @@ public class Group {
     private Set<Integer> freedomTiles = new HashSet<>();
     private Set<Integer> groupTiles = new HashSet<>();
 
+    /**Creates a clone of this group.
+     * @return a clone of this group.
+     */
+    public Group myClone(Board board) {
+        return new Group(this.groupStatus, board, this.tileColor, this.freedomTiles, this.groupTiles);
+    }
+
     /**The constructor used in the normal flow of the game.
      * @param tile the tile color of the group of stones.
      * @param firstTileIndex the first tile the group is based around.
@@ -44,11 +51,8 @@ public class Group {
         this.groupTiles = new HashSet<>(groupTiles);
     }
 
-    /**Creates a clone of this group.
-     * @return a clone of this group.
-     */
-    public Group myClone() {
-        return new Group(this.groupStatus, this.gameBoard, this.tileColor, this.freedomTiles, this.groupTiles);
+    public Board getGameBoard() {
+        return this.gameBoard;
     }
 
     /**Calculates the amount of empty tiles surrounding the group.

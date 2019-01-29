@@ -1,10 +1,9 @@
 package main.Logic;
 
 import javafx.util.Pair;
-import main.Client.Player.Player;
 import main.Server.ClientHandler;
 
-import java.util.*;
+import java.util.List;
 
 /**
  * Keeps track of the turns in an ongoing GO game. Used by the server's GameHandler and the client.

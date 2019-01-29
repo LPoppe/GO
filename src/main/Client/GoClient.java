@@ -1,5 +1,5 @@
 package main.Client;
-import main.Logic.GoGame;
+
 import main.Server.GameHandler;
 
 import java.io.*;
