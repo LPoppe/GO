@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: testng-7.0.0-beta3.jar jcommander-1.72.jar junit-4.12.jar 
+ hamcrest-core-1.3.jar annotations-16.0.2.jar
+Main-Class: Server.GoServer
