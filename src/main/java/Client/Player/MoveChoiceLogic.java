@@ -1,9 +1,9 @@
-package main.Client.Player;
+package Client.Player;
 
-import main.Logic.Board;
-import main.Logic.GoGame;
-import main.Logic.Group;
-import main.Logic.ValidityChecker;
+import Logic.Board;
+import Logic.GoGame;
+import Logic.Group;
+import Logic.ValidityChecker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +74,7 @@ public class MoveChoiceLogic {
         //First determine the smallest opponent group
         Group largestGroup = null;
         for (Group group : gameBoard.getAllGroups()) {
+
 
             if (group.getTileColor().getTileColorNumber() != myPlayerColor.getPlayerColorNumber()) {
                 if (largestGroup == null) {

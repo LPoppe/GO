@@ -1,7 +1,7 @@
-package main.Logic;
+package Logic;
 
+import Server.ClientHandler;
 import javafx.util.Pair;
-import main.Server.ClientHandler;
 
 import java.util.List;
 

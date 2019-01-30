@@ -1,4 +1,4 @@
-package main.Logic;
+package Logic;
 
 import javafx.util.Pair;
 

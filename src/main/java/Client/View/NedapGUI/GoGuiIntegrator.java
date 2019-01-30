@@ -1,4 +1,4 @@
-package main.Client.View.NedapGUI;
+package Client.View.NedapGUI;
 
 import javafx.application.Platform;
 import javafx.scene.control.Button;

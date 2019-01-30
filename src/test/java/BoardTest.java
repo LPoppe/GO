@@ -1,9 +1,10 @@
-import main.Logic.Board;
-import main.Logic.Group;
+import Logic.Board;
+import Logic.Group;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 /**Test for the board class.*/
 public class BoardTest {

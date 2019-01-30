@@ -1,6 +1,6 @@
-package main.Client;
+package Client;
 
-import main.Server.GameHandler;
+import Server.GameHandler;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -47,10 +47,6 @@ public class GoClient extends Thread {
         }
         connectToStream(host, port);
         start();
-    }
-
-    public static void main(String[] args) {
-        GoClient client = new GoClient(new GoController());
     }
 
     /**Reads input from the server.

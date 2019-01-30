@@ -1,11 +1,11 @@
-package main.Client.Player;
+package Client.Player;
 
-import main.Client.GoController;
-import main.Logic.Board;
-import main.Logic.GoGame;
-import main.Logic.ValidityChecker;
+import Client.GoController;
+import Logic.Board;
+import Logic.GoGame;
+import Logic.ValidityChecker;
 
-public class HumanPlayer implements Player {
+public class HumanPlayer implements Client.Player.Player {
     private ValidityChecker checker;
     private boolean isMyTurn = false;
     private GoController gameController;

@@ -1,9 +1,7 @@
-import main.Logic.Board;
-import main.Logic.ValidityChecker;
+import Logic.Board;
+import Logic.ValidityChecker;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.*;
 

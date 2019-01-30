@@ -1,6 +1,6 @@
-package main.Server;
+package Server;
 
-import main.Logic.GoGame;
+import Logic.GoGame;
 
 import java.io.*;
 import java.net.Socket;

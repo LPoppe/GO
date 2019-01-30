@@ -1,11 +1,13 @@
-package main.Client;
+package Client;
 
+import Client.Player.HumanPlayer;
+import Client.Player.Player;
+import Client.Player.StepLogicPlayer;
+import Client.View.NedapGUI.GoGuiIntegrator;
+import Logic.Board;
+import Logic.GoGame;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Pair;
-import main.Client.Player.*;
-import main.Client.View.NedapGUI.GoGuiIntegrator;
-import main.Logic.Board;
-import main.Logic.GoGame;
 
 public class GoController {
 
@@ -13,14 +15,12 @@ public class GoController {
     private GoGuiIntegrator goGui;
 
     //Information about the game
-    private Integer gameID;
     private String opponentPlayerName;
     private Board gameBoard;
     private boolean isClientsTurn;
     //Information about the player
     private Player player;
     private Player hintAI;
-    private String thisPlayerName;
     private GoGame.PlayerColor thisPlayerColor;
     private GoGame.PlayerColor opponentPlayerColor;
 

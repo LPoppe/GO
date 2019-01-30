@@ -1,4 +1,4 @@
-package main.Client.Player;
+package Client.Player;
 
 public interface Player {
     default void determineMove() {

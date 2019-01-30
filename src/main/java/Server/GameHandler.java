@@ -1,8 +1,8 @@
-package main.Server;
+package Server;
 
+import Logic.GoGame;
+import Logic.ValidityChecker;
 import javafx.util.Pair;
-import main.Logic.GoGame;
-import main.Logic.ValidityChecker;
 
 /**Combines two opponent GoClients of a Go game played on the GoServer.
  */

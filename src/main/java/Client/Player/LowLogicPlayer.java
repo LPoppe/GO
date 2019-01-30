@@ -1,9 +1,9 @@
-package main.Client.Player;
+package Client.Player;
 
-import main.Client.GoController;
-import main.Logic.Board;
-import main.Logic.GoGame;
-import main.Logic.ValidityChecker;
+import Client.GoController;
+import Logic.Board;
+import Logic.GoGame;
+import Logic.ValidityChecker;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;

@@ -1,4 +1,4 @@
-package main.Logic;
+package Logic;
 
 public class ValidityChecker {
     public ValidityChecker() {
