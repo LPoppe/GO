@@ -2,9 +2,7 @@ package main.Client;
 
 import javafx.scene.input.MouseEvent;
 import javafx.util.Pair;
-import main.Client.Player.BasicPlayer;
-import main.Client.Player.HumanPlayer;
-import main.Client.Player.Player;
+import main.Client.Player.*;
 import main.Client.View.NedapGUI.GoGuiIntegrator;
 import main.Logic.Board;
 import main.Logic.GoGame;
@@ -40,10 +38,10 @@ public class GoController {
      //* Initializes the correct player object (AI or human, depending on the user input).*/
     private void initPlayer(String choice) {
         if (choice.equals("H")) {
-            this.hintAI = new BasicPlayer(this, this.gameBoard, thisPlayerColor);
+            this.hintAI = new TerritorialPlayer(this, this.gameBoard, thisPlayerColor);
             this.player = new HumanPlayer(this, this.gameBoard, thisPlayerColor, hintAI);
         } else if (choice.equals("A")) {
-            this.player = new BasicPlayer(this, this.gameBoard, thisPlayerColor);
+            this.player = new TerritorialPlayer(this, this.gameBoard, thisPlayerColor);
         }
         if (isClientsTurn) {
             player.notifyTurn();
@@ -176,6 +174,7 @@ public class GoController {
     }
 
     void retryMove() {
+        //TODO PUT THIS BACK
         //player.notifyTurn();
     }
 

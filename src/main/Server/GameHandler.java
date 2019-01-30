@@ -39,12 +39,14 @@ public class GameHandler {
             if (player1.getClientName() != null && player2.getClientName() != null) {
                 goGame.setPlayerTwo(player2);
                 currentState = GameHandlerState.PLAYING;
+                String gameState = this.currentState + ";"
+                        + goGame.getCurrentPlayerColorNumber() + ";" + goGame.getBoardState();
                 player1.sendLine("ACKNOWLEDGE_CONFIG+" + player1.getClientName()
                         + "+" + goGame.getColorByClient(player1).getPlayerColorNumber() + "+" + goGame.getBoardSize()
-                        + "+" + goGame.getBoardState() + "+" + player2.getClientName());
+                        + "+" + gameState + "+" + player2.getClientName());
                 player2.sendLine("ACKNOWLEDGE_CONFIG+" + player2.getClientName()
                         + "+" + goGame.getColorByClient(player2).getPlayerColorNumber() + "+" + goGame.getBoardSize()
-                        + "+" + goGame.getBoardState() + "+" + player1.getClientName());
+                        + "+" + gameState + "+" + player1.getClientName());
             } else {
                 currentState = GameHandlerState.INIT;
             }

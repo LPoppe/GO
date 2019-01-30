@@ -11,7 +11,7 @@ public class Group {
 
     //A group is alive when it can no longer be removed from the board.
     // A group is dead when it can no longer be saved.
-    private enum Status { unsettled, alive, dead }
+    public enum Status { unsettled, alive, dead }
     private Status groupStatus;
     private Board gameBoard;
     private Board.TileColor tileColor;
@@ -53,6 +53,10 @@ public class Group {
 
     public Board getGameBoard() {
         return this.gameBoard;
+    }
+
+    public Status getGroupStatus() {
+        return this.groupStatus;
     }
 
     /**Calculates the amount of empty tiles surrounding the group.
@@ -97,15 +101,47 @@ public class Group {
         return tileNeighbors;
     }
 
+    /**Rather than returning solely the neighbors, also returns diagonals.
+     * @param tileIndex the tile to find the neighbors of.
+     * @param board the board the tiles are on.
+     * @return a list of the tiles surrounding the given tile index.
+     */
+    public static List<Integer> getFullNeighborTiles(int tileIndex, Board board) {
+        Pair<Integer, Integer> tileCoordinates = board.getTileCoordinates(tileIndex);
+        List<Integer> tileNeighbors = new ArrayList<>();
+        int xCoordinate = tileCoordinates.getKey();
+        int yCoordinate = tileCoordinates.getValue();
+
+        for (int colNum = yCoordinate - 1; colNum <= (yCoordinate + 1); colNum += 1) {
+            for (int rowNum = xCoordinate - 1; rowNum <= (xCoordinate + 1); rowNum += 1) {
+                if (!((colNum == yCoordinate) && (rowNum == xCoordinate))) {
+                    if (isWithinBoard(colNum, rowNum, board)) {
+                        Integer neighborTile = board.getTileIndex(rowNum, colNum);
+                        tileNeighbors.add(neighborTile);
+                    }
+                }
+            }
+        }
+        return tileNeighbors;
+    }
+
+    private static boolean isWithinBoard(int row, int col, Board board) {
+        if (row < 0 || col < 0) {
+            return false;
+        } else {
+            return row < board.getBoardSize() && col < board.getBoardSize();
+        }
+    }
+
     public int getGroupSize() {
         return groupTiles.size();
     }
 
-    Set<Integer> getGroupTiles() {
+    public Set<Integer> getGroupTiles() {
         return this.groupTiles;
     }
 
-    Set<Integer> getFreedomTiles() {
+    public Set<Integer> getFreedomTiles() {
         return this.freedomTiles;
     }
 
@@ -122,10 +158,25 @@ public class Group {
         groupTiles.add(tileIndex);
     }
 
-    //TODO Check if a group can no longer be killed.
     public void checkIfAlive() {
-        //if so:
-        //this.groupStatus = Status.alive;
+        for (Integer tile : getGroupTiles()) {
+            List<Integer> neighbors = getNeighborTiles(tile, gameBoard);
+            for (Integer neighbor : neighbors) {
+                if (gameBoard.getTileContent(neighbor) == Board.TileColor.empty.getTileColorNumber()) {
+                    List<Integer> fullNeighbors = getFullNeighborTiles(neighbor, gameBoard);
+                    boolean confirmedNotAlive = false;
+                    for (Integer fullNeighbor : fullNeighbors) {
+                        if (gameBoard.getTileContent(fullNeighbor) != this.tileColor.getTileColorNumber()) {
+                            confirmedNotAlive = true;
+                        }
+                    }
+
+                    if (!confirmedNotAlive) {
+                        this.groupStatus = Status.alive;
+                    }
+                }
+            }
+        }
     }
 
     //TODO Check if a group can no longer be saved.

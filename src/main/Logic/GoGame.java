@@ -120,8 +120,7 @@ public class GoGame {
      * @param board the board to be used.
      * @return a pair containing the scores of the black and white players
      */
-    //TODO Calculate scores not implemented yet. Don't forget Group.getNeighbors!
-    private static Pair<Double, Double> calculateScores(Board board) {
+    public static Pair<Double, Double> calculateScores(Board board) {
         //Add the empty tiles to the groups of the game board.
         board.determineEmptyGroups();
         Pair<Double, Double> playerScores;
@@ -148,10 +147,8 @@ public class GoGame {
                     }
                 }
                 if (blackFound && !whiteFound) {
-                    System.out.println("Empty tile size: " + group.getGroupTiles().size());
                     blackScore = blackScore + group.getGroupTiles().size();
                 } else if (whiteFound && !blackFound) {
-                    System.out.println("Empty tile size: " + group.getGroupTiles().size());
                     whiteScore = whiteScore + group.getGroupTiles().size();
                 }
             }

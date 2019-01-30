@@ -5,10 +5,10 @@ import main.Logic.Board;
 import main.Logic.GoGame;
 import main.Logic.ValidityChecker;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-public class BasicPlayer implements Player {
+public class LowLogicPlayer implements Player {
     private int allowedCalculationTime;
     private ValidityChecker checker;
     private GoController gameController;
@@ -17,30 +17,44 @@ public class BasicPlayer implements Player {
     //move time in seconds?
     private int moveTime;
 
-    public BasicPlayer(GoController controller, Board board, GoGame.PlayerColor thisPlayerColor) {
+    public LowLogicPlayer(GoController controller, Board board, GoGame.PlayerColor thisPlayerColor) {
         this.checker = new ValidityChecker();
         this.gameController = controller;
         this.gameBoard = board;
         this.myPlayerColor = thisPlayerColor;
     }
 
-    /**Determines a random valid move to place on the board.
+    /**Determines a valid move using some criteria (see the MoveChoiceLogic class).
      * If it is the player, the move is sent onwards to the server. If it is the hint AI,
      * the move is instead sent to the controller to be displayed on the GUI as a hint.
      */
     @Override
     public void determineMove() {
+        //Create list of valid options.
         List<Integer> validOptions = MoveChoiceLogic.checkValidity(gameBoard, checker, myPlayerColor);
+        //Remove tiles that cause own group capture from options.
+        List<Integer> filteredOptions = MoveChoiceLogic.preventOwnCapture(gameBoard, validOptions, myPlayerColor);
         if (this == gameController.getPlayer()) {
-            if (validOptions.isEmpty()) {
+            if (filteredOptions.isEmpty()) {
                 //Send -1 for passing if no valid options are available.
                 gameController.sendMoveToClient(-1);
             } else {
-                Integer calculatedMove = validOptions.get((int) Math.floor(Math.random() * validOptions.size()));
+                //Choose a random tile from the remaining options.
+                Integer calculatedMove = filteredOptions.get((int) Math.floor(Math.random() * filteredOptions.size()));
+                //Check if an opponent's group can be captured
+                Integer bestCaptureOption = MoveChoiceLogic.checkForCapture(gameBoard, validOptions, myPlayerColor);
+                if (bestCaptureOption != null) {
+                    calculatedMove = bestCaptureOption;
+                }
+                try {
+                    TimeUnit.MILLISECONDS.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 gameController.sendMoveToClient(calculatedMove);
             }
         } else {
-            if (validOptions.isEmpty()) {
+            if (filteredOptions.isEmpty()) {
                 //Send -1 for passing if no valid options are available.
                 System.out.println("No more valid moves found.");
             } else {

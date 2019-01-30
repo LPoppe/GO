@@ -47,7 +47,7 @@ public class Board {
      * Can also be used by the AI to calculate ahead.
      * @param board the board to be copied
      */
-    Board(Board board) {
+    public Board(Board board) {
         this.boardSize = board.getBoardSize();
         this.boardState = board.getBoardState();
         this.currentBoard = board.currentBoard.clone();
