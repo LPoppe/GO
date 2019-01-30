@@ -53,7 +53,7 @@ public class ClientHandler extends Thread {
     }
     /**
      * Determines the correct response to a message sent by a client.
-     * @param input
+     * @param input The message received from the server.
      */
     private void processMessage(String input) {
         server.printOnServer("From client: " + input);
@@ -102,10 +102,6 @@ public class ClientHandler extends Thread {
      * @param message the message sent.
      */
     void sendLine(String message) {
-        //TODO: remove check when done.
-        if (message.contains("\n")) {
-            throw new RuntimeException("Blegh: " + message);
-        }
 
         try {
             server.printOnServer("Game " + gameHandler.getGameID()
@@ -190,7 +186,7 @@ public class ClientHandler extends Thread {
         } else {
             if (gameHandler.getCurrentPlayer() == this) {
                 int move = Integer.parseInt(splitMessage[3]);
-                    gameHandler.processMove(this, move);
+                gameHandler.processMove(this, move);
             } else {
                 sendLine("INVALID_MOVE+" + "Attempt at sending move out of turn.");
                 server.printOnServer(clientName + ": Attempt at sending move out of turn.");

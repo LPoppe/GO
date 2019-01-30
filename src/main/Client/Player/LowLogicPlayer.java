@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class LowLogicPlayer implements Player {
-    private int allowedCalculationTime;
     private ValidityChecker checker;
     private GoController gameController;
     private Board gameBoard;

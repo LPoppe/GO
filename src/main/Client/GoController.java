@@ -7,8 +7,6 @@ import main.Client.View.NedapGUI.GoGuiIntegrator;
 import main.Logic.Board;
 import main.Logic.GoGame;
 
-import java.util.Arrays;
-
 public class GoController {
 
     private GoClient gameClient;
@@ -38,10 +36,10 @@ public class GoController {
      //* Initializes the correct player object (AI or human, depending on the user input).*/
     private void initPlayer(String choice) {
         if (choice.equals("H")) {
-            this.hintAI = new TerritorialPlayer(this, this.gameBoard, thisPlayerColor);
+            this.hintAI = new StepLogicPlayer(this, this.gameBoard, thisPlayerColor);
             this.player = new HumanPlayer(this, this.gameBoard, thisPlayerColor, hintAI);
         } else if (choice.equals("A")) {
-            this.player = new TerritorialPlayer(this, this.gameBoard, thisPlayerColor);
+            this.player = new StepLogicPlayer(this, this.gameBoard, thisPlayerColor);
         }
         if (isClientsTurn) {
             player.notifyTurn();
@@ -119,8 +117,6 @@ public class GoController {
             updateControlBoard(playerColorNumber, tileIndex);
         }
 
-        //TODO remove move made print
-        System.out.println("Move received: " + Arrays.toString(moveDetails));
         if (!gameBoard.getBoardHistory().get(gameBoard.getBoardHistory().size() - 1).equals(newBoard)) {
             throw new RuntimeException("Game board does not match received string after update:\n"
             + newBoard + "\n" + gameBoard.getBoardHistory().get(gameBoard.getBoardHistory().size() - 1));
@@ -174,8 +170,7 @@ public class GoController {
     }
 
     void retryMove() {
-        //TODO PUT THIS BACK
-        //player.notifyTurn();
+        player.notifyTurn();
     }
 
     public void endGame(String[] splitMessage) {

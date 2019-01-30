@@ -158,6 +158,7 @@ public class Group {
         groupTiles.add(tileIndex);
     }
 
+    //TODO Something along these lines would check if a group is safe, and can no longer be removed.
     public void checkIfAlive() {
         for (Integer tile : getGroupTiles()) {
             List<Integer> neighbors = getNeighborTiles(tile, gameBoard);

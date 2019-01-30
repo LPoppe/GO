@@ -33,7 +33,6 @@ public class GameHandler {
     /**Requires currentState != PLAYING.
      * Sends the acknowledgement of the configuration to the players.
      */
-    //TODO GAME STARTS AS SOON AS PLAYER 2 IS CONNECTED, INSTEAD OF AFTER PLAYER 2 HANDSHAKE
     private synchronized void setNextState() {
         if (player1 != null && player2 != null && goGame != null) {
             if (player1.getClientName() != null && player2.getClientName() != null) {
@@ -120,7 +119,6 @@ public class GameHandler {
     /** Updates the game and its board after the turn's player makes a valid move.
      * @param messagingPlayer Should be the current turn's player (checked in ClientHandler).
      * @param playerMove the tile index and player color associated with a player's move.
-     * @return return false if a move is invalid. True if valid and processed.
      */
     synchronized void processMove(ClientHandler messagingPlayer, int playerMove) {
         //First check if both players have passed:
@@ -158,7 +156,7 @@ public class GameHandler {
      * @param messagingPlayer the player who sent the move.
      * @param playerMove the tile index (or -1 if pass) of the move sent by the player.
      */
-    private synchronized void sendMoveAcknowledge (ClientHandler messagingPlayer, int playerMove) {
+    private synchronized void sendMoveAcknowledge(ClientHandler messagingPlayer, int playerMove) {
         //The game state includes the current status, the current player (to make next move),
         //and the new board represented as a string.
         String gameState = this.currentState + ";"
@@ -196,7 +194,7 @@ public class GameHandler {
         }
     }
 
-    /**Resets the game*/
+    /**Resets the game.*/
     private void resetGame() {
         setConfig(player1, goGame.getColorByClient(player1), goGame.getBoardSize());
     }

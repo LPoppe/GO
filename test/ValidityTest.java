@@ -44,7 +44,6 @@ public class ValidityTest {
         assertEquals(board5.getBoardState(), newBoard.getBoardState());
         assertEquals(board5.getCurrentBoard()[9], newBoard.getCurrentBoard()[9]);
         //However, objects should not.
-        //TODO this does not test the content of the group set, but I'm not sure how to add that.
         assertNotSame(board5.getCurrentBoard(), newBoard.getCurrentBoard());
         assertNotSame(board5.getAllGroups(), newBoard.getAllGroups());
         assertNotSame(board5.getCurrentBoard(), newBoard.getCurrentBoard());
